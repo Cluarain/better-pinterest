@@ -1,15 +1,29 @@
 # BetterPinterest
 
 A modular Chromium extension (Manifest V3) that tweaks the Pinterest interface
-through a popup with toggles. Built around three ideas:
+through a popup with toggles. No account, no build step, no telemetry — just
+load it and flip the switches you want.
+
+## What it does
+
+| Toggle | Effect |
+| --- | --- |
+| **Dark mode** | Minimal dark theme (`html.pt-dark`) |
+| **Hide left menu** | Collapses the sidebar navigation |
+| **Hide search bar** | Removes the top search input |
+| **Hide pin menu footer** | Hides the footer on the pin detail page |
+| **Media autoplay** | Restarts muted looping playback of feed videos/GIFs |
+
+State persists per-browser in `chrome.storage.local`, so your toggles survive
+reloads and restarts.
+
+## How it works (short version)
 
 1. **State** lives in `chrome.storage.local` (single source of truth).
-2. **CSS does the styling.** One master stylesheet is injected once
-   (`<style id="pt-master-styles">`); toggling a feature only adds/removes a
-   class on `<html>` (`pt-dark`, `pt-hide-search`, ...). No inline styles,
-   no `insertCSS` per toggle, no flicker.
-3. **JS stays tiny.** Only features that need real logic subclass `BaseFeature`;
-   the shared `FeatureRegistry` handles init / enable / disable / revert.
+2. **CSS does the styling.** One master stylesheet is injected once;
+   toggling a feature only adds/removes a class on `<html>`. No flicker.
+3. **JS stays tiny.** Only features that need real logic run JavaScript;
+   everything else is pure CSS.
 
 ## Install (dev mode)
 
@@ -18,111 +32,17 @@ through a popup with toggles. Built around three ideas:
 3. **Load unpacked** → select this repository folder
 4. Open `https://www.pinterest.com`, click the toolbar icon, flip a toggle.
 
-## Project structure
-
-```text
-├── manifest.json               # MV3 config (content script + popup + SW)
-└── src
-    ├── background
-    │   └── service-worker.js   # seeds defaults; message-routing extension point
-    ├── content
-    │   ├── index.js            # entry point: injects styles, boots registry
-    │   ├── core
-    │   │   ├── registry.js     # BaseFeature / CssFeature / FeatureRegistry
-    │   │   ├── storage.js      # promise wrapper for chrome.storage.local
-    │   │   └── observer.js     # MutationObserver wrapper (rAF batching)
-    │   ├── features
-    │   │   ├── index.js        # catalogue + DEFAULT_STATE (THE place to register)
-    │   │   ├── darkMode.js     # CSS  → html.pt-dark
-    │   │   ├── leftMenu.js     # CSS  → html.pt-hide-left-menu
-    │   │   ├── searchBar.js    # CSS  → html.pt-hide-search
-    │   │   ├── pinBurger.js    # CSS  → html.pt-hide-pin-menu-footer
-    │   │   └── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
-    │   └── styles
-    │       └── master.css      # ALL visual rules, scoped to html classes
-    └── popup
-        ├── popup.html          # control panel markup
-        ├── popup.css           # toggle switch styles
-        └── popup.js            # renders toggles, writes storage, sends messages
-```
-
-## How to add a CSS toggle (3 steps — no core changes)
-
-1. **`src/content/styles/master.css`** — add rules scoped to a new html class:
-   ```css
-   html.pt-hide-comments [data-test-id="comments"] { display: none !important; }
-   ```
-2. **`src/content/features/myFeature.js`** — declare the config:
-   ```js
-   export const myFeature = {
-     id: 'myFeature',
-     title: 'Hide Comments',
-     type: 'css',
-     htmlClass: 'pt-hide-comments',
-     defaultValue: false,
-     description: 'Hides the comment section.',
-   };
-   ```
-3. **`src/content/features/index.js`** — import it and add to `FEATURES`.
-
-Done: the registry, popup, storage seeding and content bootstrap pick it up
-automatically.
-
-## How to add a JS feature
-
-Subclass `BaseFeature` (see `mediaAutoplay.js` as a full example), implement
-`init()` / `onEnable()` / `onDisable()`, and register the instance in
-`src/content/features/index.js`. Use `DomObserver` instead of raw
-`MutationObserver` for anything that watches Pinterest's feed.
-
-```js
-export class MyFeature extends BaseFeature {
-  init() { this.observer = new DomObserver(); /* ... */ }
-  onEnable() { /* apply */ }
-  onDisable() { /* revert */ }
-}
-```
-
-## Selector maintenance (important)
-
-Pinterest re-rolls generated CSS class names on every deploy. All selectors
-should rely on `data-test-id`, `aria-label`, or stable structural patterns
-(`#ids`, `:has(...)`, roles) — **never** generated classes like `.xyz123`.
-
-The current rules in `master.css` / `MEDIA_SELECTORS` in `mediaAutoplay.js` use
-the placeholder selectors from the design doc; candidate selectors observed in
-community userscripts (2025–2026) are listed as comments in both files. When a
-toggle stops working, that is where to look first.
-
-> Debugging tips (Pinterest tab, DevTools):
-> - The Elements panel / page console show `<html data-pt-tweaker="ready">`
->   and `data-pt-state='{"darkMode":true,...}'` — whether the content script
->   booted and which state it applies. These are plain DOM attributes, so they
->   are visible from the page console, unlike `window.__ptTweaker` (an
->   isolated-world global that reads `undefined` in the default console context).
-> - Bootstrap logs use `console.info` — visible without enabling "Verbose".
-> - Toggle a feature live from the page console:
->   `document.dispatchEvent(new CustomEvent('pt-tweaker:toggle', { detail: { id: 'darkMode', enabled: true } }))`
-
-## Data flow
-
-1. User clicks a toggle in the popup.
-2. `popup.js` writes `chrome.storage.local` and sends a `PT_TWEAKER_TOGGLE`
-   message to the background worker (routing / logging extension point).
-3. Content scripts receive the change via `chrome.storage.onChanged` (and, as a
-   redundant path, the runtime message) and call `registry.apply(id, enabled)`.
-4. CSS features: the registry adds/removes the html class — `master.css` does
-   the rest. JS features: `feature.enable()` / `feature.disable()` run.
-5. On reload, `content/index.js` reads storage once and re-applies everything.
-
 ## Notes / limitations
 
-- `darkMode` is intentionally minimal (base rules only) — the design doc plans
-  CSS-variable injection later.
+- `darkMode` is intentionally minimal (base rules only).
 - `mediaAutoplay` is best-effort: browsers block unmuted autoplay, so videos
-  are forced to `muted` + `loop`; GIF→video conversion restores the original
-  `<img>` if the replacement fails to load.
-- No build step: the content script uses dynamic `import()` of ES modules.
-  Every imported module is listed under `web_accessible_resources` in
-  `manifest.json` — keep that list in sync when adding feature files.
+  are forced to `muted` + `loop`.
+- Pinterest re-rolls generated CSS class names on every deploy, so selectors
+  are based on stable attributes (`data-test-id`, `aria-label`, roles).
+
+## Development
+
+Working on the code, adding features, or using an AI agent on this repo? See
+**[README.DEV.md](./README.DEV.md)** — architecture, project structure, guides,
+and debugging notes for developers and agents.
 
