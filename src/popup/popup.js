@@ -68,7 +68,7 @@ function createRow(feature) {
   return label;
 }
 
-/** Build the DOM for one feature setting (currently only `select` is used). */
+/** Build the DOM for one feature setting — a slider (`range`) or a `select`. */
 function createSettingRow(feature, setting) {
   const row = document.createElement('div');
   row.className = 'setting-row';
@@ -77,26 +77,81 @@ function createSettingRow(feature, setting) {
 
   const controlId = `setting-${feature.id}-${setting.id}`;
 
+  const head = document.createElement('div');
+  head.className = 'setting-head';
+
   const label = document.createElement('label');
   label.className = 'setting-label';
   label.htmlFor = controlId;
   label.textContent = setting.label;
+  head.append(label);
 
-  const control = document.createElement('select');
-  control.className = 'setting-select';
-  control.id = controlId;
-  control.dataset.featureId = feature.id;
-  control.dataset.settingId = setting.id;
+  let control;
+  if (setting.type === 'range') {
+    const value = document.createElement('span');
+    value.className = 'setting-value';
+    head.append(value);
+    control = createRangeInput(feature, setting, controlId);
+  } else {
+    control = createSelectInput(feature, setting, controlId);
+  }
+
+  row.append(head, control);
+  return row;
+}
+
+/** `<input type="range">` — its live readout lives in `.setting-head`. */
+function createRangeInput(feature, setting, controlId) {
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.className = 'setting-range-input';
+  input.id = controlId;
+  input.dataset.featureId = feature.id;
+  input.dataset.settingId = setting.id;
+  input.dataset.unit = setting.unit ?? '';
+  input.min = String(setting.min ?? 0);
+  input.max = String(setting.max ?? 100);
+  input.step = String(setting.step ?? 1);
+  return input;
+}
+
+/** `<select>` built from `setting.options`. */
+function createSelectInput(feature, setting, controlId) {
+  const select = document.createElement('select');
+  select.className = 'setting-select';
+  select.id = controlId;
+  select.dataset.featureId = feature.id;
+  select.dataset.settingId = setting.id;
 
   for (const option of setting.options ?? []) {
     const opt = document.createElement('option');
     opt.value = String(option.value);
     opt.textContent = option.label;
-    control.append(opt);
+    select.append(opt);
   }
+  return select;
+}
 
-  row.append(label, control);
-  return row;
+/** Refresh the `"{value} {unit}"` readout next to a range slider. */
+function syncRangeReadout(input) {
+  const value = input.closest('.setting-row')?.querySelector('.setting-value');
+  if (!value) return;
+  const unit = input.dataset.unit ? ` ${input.dataset.unit}` : '';
+  value.textContent = `${input.value}${unit}`;
+}
+
+/** Push a stored value onto a control (range values are clamped to min/max). */
+function applyControlValue(control, setting, value) {
+  if (control instanceof HTMLInputElement && control.type === 'range') {
+    const min = Number(setting.min ?? 0);
+    const max = Number(setting.max ?? 100);
+    const numeric = Number(value);
+    const chosen = Number.isFinite(numeric) ? numeric : Number(setting.defaultValue);
+    control.value = String(Math.min(Math.max(chosen, min), max));
+    syncRangeReadout(control);
+    return;
+  }
+  control.value = value == null ? String(setting.defaultValue) : String(value);
 }
 
 /** Build a popup section for a logical feature group. */
@@ -134,9 +189,11 @@ function getInput(featureId) {
 }
 
 function getSettingControl(featureId, settingId) {
+  const id = CSS.escape(featureId);
+  const sid = CSS.escape(settingId);
   return listEl.querySelector(
-    `.setting-select[data-feature-id="${CSS.escape(featureId)}"]` +
-      `[data-setting-id="${CSS.escape(settingId)}"]`,
+    `.setting-select[data-feature-id="${id}"][data-setting-id="${sid}"], ` +
+      `.setting-range-input[data-feature-id="${id}"][data-setting-id="${sid}"]`,
   );
 }
 
@@ -159,8 +216,7 @@ async function syncFromStorage() {
     for (const setting of feature.settings ?? []) {
       const control = getSettingControl(feature.id, setting.id);
       if (!control) continue;
-      const value = state[settingKey(feature.id, setting.id)];
-      control.value = value == null ? String(setting.defaultValue) : String(value);
+      applyControlValue(control, setting, state[settingKey(feature.id, setting.id)]);
     }
   }
 
@@ -195,31 +251,39 @@ async function handleToggle(event) {
       ? await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPE, featureId, enabled })
       : null;
     if (response?.ok) {
-      statusEl.textContent = `${enabled ? 'Enabled' : 'Disabled'} ${tag} — applied on page`;
+      // statusEl.textContent = `${enabled ? 'Enabled' : 'Disabled'} ${tag} — applied on page`;
       return;
     }
   } catch {
     /* no content script in the active tab */
   }
-  statusEl.textContent = `Saved ${tag}. Open or reload pinterest.com to see it.`;
+  // statusEl.textContent = `Saved ${tag}. Open or reload pinterest.com to see it.`;
 }
 
 async function handleSettingChange(event) {
   const control = event.target;
-  if (!(control instanceof HTMLSelectElement) || !control.matches('.setting-select')) return;
 
-  const { featureId, settingId } = control.dataset;
-  const feature = getFeature(featureId);
-  const setting = feature?.settings?.find((entry) => entry.id === settingId);
-  const value = control.value;
+  // Slider (`range`) → persist a number.
+  if (control instanceof HTMLInputElement && control.matches('.setting-range-input')) {
+    const { featureId, settingId } = control.dataset;
+    // const setting = getFeature(featureId)?.settings?.find((e) => e.id === settingId);
+    await store.set(settingKey(featureId, settingId), Number(control.value));
+    // const unit = control.dataset.unit ? ` ${control.dataset.unit}` : '';
+    // statusEl.textContent = `${setting?.label ?? settingId}: ${control.value}${unit}`;
+    return;
+  }
 
-  // Settings travel through storage only; the content script routes
-  // `<featureId>.<settingId>` keys to registry.applySetting().
-  await store.set(settingKey(featureId, settingId), value);
-
-  const label = setting?.label ?? settingId;
-  const option = setting?.options?.find((entry) => String(entry.value) === value);
-  statusEl.textContent = `${label}: ${option?.label ?? value}`;
+  // Dropdown (`select`) → persist the string value.
+  if (control instanceof HTMLSelectElement && control.matches('.setting-select')) {
+    const { featureId, settingId } = control.dataset;
+    const feature = getFeature(featureId);
+    const setting = feature?.settings?.find((e) => e.id === settingId);
+    const value = control.value;
+    await store.set(settingKey(featureId, settingId), value);
+    const label = setting?.label ?? settingId;
+    const option = setting?.options?.find((e) => String(e.value) === value);
+    statusEl.textContent = `${label}: ${option?.label ?? value}`;
+  }
 }
 
 function init() {
@@ -229,8 +293,22 @@ function init() {
     const target = event.target;
     if (target instanceof HTMLInputElement && target.matches('.toggle-input')) {
       handleToggle(event);
-    } else if (target instanceof HTMLSelectElement && target.matches('.setting-select')) {
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.matches('.setting-range-input')) {
       handleSettingChange(event);
+      return;
+    }
+    if (target instanceof HTMLSelectElement && target.matches('.setting-select')) {
+      handleSettingChange(event);
+    }
+  });
+
+  // Live readout while dragging a slider (before the value is persisted).
+  listEl.addEventListener('input', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.matches('.setting-range-input')) {
+      syncRangeReadout(target);
     }
   });
 
@@ -244,8 +322,10 @@ function init() {
       }
       const parsed = parseSettingKey(key);
       if (parsed && change.newValue != null) {
+        const feature = getFeature(parsed.featureId);
+        const setting = feature?.settings?.find((e) => e.id === parsed.settingId);
         const control = getSettingControl(parsed.featureId, parsed.settingId);
-        if (control) control.value = String(change.newValue);
+        if (control && setting) applyControlValue(control, setting, change.newValue);
       }
     }
     if ('darkMode' in changes) {
