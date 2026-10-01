@@ -28,11 +28,6 @@
    the theme can be fully tuned (accent, surface tones, ...).
 ---------------------------------------------------------------------------- */
 html.pt-dark {
-   /* --sema-color-background-default: hsl(0, 0%, 10%);
-   --sema-color-text-default: #fff;
-   background: var(--sema-color-background-default) !important;
-   color: var(--sema-color-text-default) !important; */
-
    color-scheme: dark;
 
    /* ------------------------------------------------------------------ *
@@ -190,6 +185,10 @@ html.pt-dark {
    * ------------------------------------------------------------------ */
    [data-test-id="closeup-metadata-details-divider"] {
       border-color: var(--sema-color-border-decorative) !important;
+   }
+
+   [data-test-id="pin-card-last-visited-overlay"]>div {
+      color: var(--sema-color-text-default);
    }
 }
 
