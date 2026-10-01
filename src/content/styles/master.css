@@ -463,6 +463,10 @@ html.pt-dark {
    [data-test-id="pin-card-last-visited-overlay"]>div {
       color: var(--sema-color-text-default);
    }
+
+   div.horizontal-scroll-container>div>div>div>div>div>div {
+      color: var(--sema-color-text-default);
+   }
 }
 
 /* ---------------------------------------------------------------------------
