@@ -545,6 +545,14 @@ html.pt-hide-tabs {
    4.1 Left Menu — html.pt-hide-left-menu      (feature: leftMenu)
 ---------------------------------------------------------------------------- */
 html.pt-hide-left-menu {
+
+   scrollbar-width: thin;
+
+   &::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+   }
+
    #VerticalNavContent {
       display: none !important;
    }
