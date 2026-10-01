@@ -16,6 +16,7 @@
 import { darkMode } from './darkMode.js';
 import { leftMenu } from './leftMenu.js';
 import { searchBar } from './searchBar.js';
+import { tabsBar } from './tabsBar.js';
 import { pinBurger } from './pinBurger.js';
 import { mediaAutoplay, MediaAutoplayFeature } from './mediaAutoplay.js';
 
@@ -27,6 +28,7 @@ export const FEATURES = [
   darkMode,
   leftMenu,
   searchBar,
+  tabsBar,
   pinBurger,
   new MediaAutoplayFeature(mediaAutoplay),
 ];

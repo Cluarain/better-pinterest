@@ -255,6 +255,16 @@ html.pt-hide-search {
 */
 
 /* ---------------------------------------------------------------------------
+   4.1 Tabs Bar — html.pt-hide-tabs                 (feature: tabsBar)
+   Hides the second top-level feed block (the tabs bar on the home feed).
+---------------------------------------------------------------------------- */
+html.pt-hide-tabs {
+   [data-test-id="homefeed-feed"]>div:nth-child(2) {
+      display: none !important;
+   }
+}
+
+/* ---------------------------------------------------------------------------
    4.1 Left Menu — html.pt-hide-left-menu      (feature: leftMenu)
 ---------------------------------------------------------------------------- */
 html.pt-hide-left-menu {

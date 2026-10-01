@@ -11,6 +11,7 @@ load it and flip the switches you want.
 | **Dark mode** | Minimal dark theme (`html.pt-dark`) |
 | **Hide left menu** | Collapses the sidebar navigation |
 | **Hide search bar** | Removes the top search input |
+| **Hide tabs bar** | Hides the tabs bar on the home feed |
 | **Hide pin menu footer** | Hides the footer on the pin detail page |
 | **Media autoplay** | Restarts muted looping playback of feed videos/GIFs |
 

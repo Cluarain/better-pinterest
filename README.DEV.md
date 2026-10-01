@@ -34,6 +34,7 @@ modules directly from `src/`.
     │   │   ├── darkMode.js     # CSS  → html.pt-dark
     │   │   ├── leftMenu.js     # CSS  → html.pt-hide-left-menu
     │   │   ├── searchBar.js    # CSS  → html.pt-hide-search
+    │   │   ├── tabsBar.js      # CSS  → html.pt-hide-tabs
     │   │   ├── pinBurger.js    # CSS  → html.pt-hide-pin-menu-footer
     │   │   └── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
     │   └── styles
