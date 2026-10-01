@@ -600,7 +600,7 @@ html.pt-hide-pin-menu-footer {
 ---------------------------------------------------------------------------- */
 html.pt-hide-pin-header {
    [data-test-id="PinTypeIdentifier"] {
-      display: none;
+      display: none !important;
    }
 }
 
