@@ -1,0 +1,96 @@
+/* ============================================================================
+   BetterPinterest — master.css
+   ============================================================================
+   Injected ONCE per page by src/content/index.js as:
+     <style id="pt-master-styles"> ... </style>
+
+   Feature toggles never touch element styles: JS only adds/removes a class
+   on <body>, every visual rule below is scoped to those body classes.
+
+   SELECTOR POLICY (design doc §7):
+   Pinterest re-rolls generated class names on every deploy. Prefer
+   `data-test-id`, `aria-label` or stable structural patterns (#ids, :has(),
+   role attributes) over generated classes like `.xyz123`.
+
+   === SELECTOR MAINTENANCE ===
+   The ACTIVE rules below use the *placeholder* selectors from the design doc.
+   Candidate selectors collected from community userscripts/styles
+   (verified 2025–2026) are listed as comments under each section — swap them
+   in and re-test whenever a toggle stops working.
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   4.1 Dark Mode — body.pt-dark                (feature: darkMode)
+   Base rules only, per design doc §4.1.
+   TODO(future): inject custom CSS variables instead of these base rules so
+   the theme can be fully tuned (accent, surface tones, ...).
+---------------------------------------------------------------------------- */
+body.pt-dark {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/*
+   Quick-dirty alternative while iterating (inverts the whole page; media must
+   then be inverted back). Uncomment to try:
+body.pt-dark { filter: invert(0.92) hue-rotate(180deg) !important; }
+body.pt-dark img,
+body.pt-dark video,
+body.pt-dark picture { filter: invert(1) hue-rotate(180deg) !important; }
+*/
+
+/* ---------------------------------------------------------------------------
+   4.1 Search Bar — body.pt-hide-search         (feature: searchBar)
+---------------------------------------------------------------------------- */
+body.pt-hide-search [data-test-id="search-bar"] {
+  display: none !important;
+}
+
+/*
+   Candidate selectors (seen in community scripts, 2025–2026):
+     #searchBoxContainer
+     input[name="searchBoxInput"]
+     [data-test-id="search-box-input"]
+     header input[placeholder*="Search"]
+*/
+
+/* ---------------------------------------------------------------------------
+   4.1 Left Menu — body.pt-hide-left-menu      (feature: leftMenu)
+---------------------------------------------------------------------------- */
+body.pt-hide-left-menu [data-test-id="left-menu"] {
+  display: none !important;
+}
+
+/*
+   TODO(user): Pinterest moves this around — inspect the home-feed DOM and
+   point this at the sidebar/aside container next to the pin grid.
+*/
+
+/* ---------------------------------------------------------------------------
+   4.1 Pin Burger Menu — body.pt-hide-burger   (feature: pinBurger)
+   Hides the "⋯" / more-options action menu shown on pin hover.
+---------------------------------------------------------------------------- */
+body.pt-hide-burger [data-test-id="pin-burger-menu"] {
+  display: none !important;
+}
+
+/*
+   Candidate selectors (seen in community scripts, 2025–2026):
+     - hover action overlay that holds Save + "⋯":
+         [data-test-id="main-pin-hover-overlay"]
+     - pin card containers:
+         [data-test-id="pin"], [data-grid-item="true"]
+     - the save button itself:
+         [data-test-id="SaveButton"]
+*/
+
+/* ---------------------------------------------------------------------------
+   4.2 Media Autoplay — body.pt-autoplay-media (feature: mediaAutoplay)
+   Styling for the <video> elements created by mediaAutoplay.js — kept here
+   (CSS) instead of inline styles, per the DRY approach.
+---------------------------------------------------------------------------- */
+body.pt-autoplay-media video[data-pt-gif-video] {
+  display: block;
+  width: 100%;
+  height: auto;
+}

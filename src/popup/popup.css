@@ -1,0 +1,177 @@
+/* popup.css — BetterPinterest control panel */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --pt-red: #e60023;
+  --pt-red-dark: #ad081b;
+  --bg: #ffffff;
+  --bg-soft: #f6f6f6;
+  --text: #1a1a1a;
+  --text-muted: #6b6b6b;
+  --border: #e9e9e9;
+  --track-off: #cdcdcd;
+  --track-on: var(--pt-red);
+}
+
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ---------- Header ---------- */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--pt-red);
+  position: relative;
+}
+.logo::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #fff;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- Toggle list ---------- */
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.toggle-row:hover {
+  background: var(--bg-soft);
+}
+
+.toggle-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.toggle-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.toggle-title {
+  font-weight: 600;
+}
+.toggle-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.toggle-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.toggle-badge--js {
+  background: #fff0f2;
+  color: var(--pt-red);
+  border-color: #ffd6db;
+}
+
+/* Hidden but focusable checkbox */
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ---------- Switch ---------- */
+.toggle-track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--track-off);
+  transition: background 0.15s;
+}
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+
+.toggle-input:checked + .toggle-body + .toggle-track {
+  background: var(--track-on);
+}
+.toggle-input:checked + .toggle-body + .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+.toggle-input:focus-visible + .toggle-body + .toggle-track {
+  outline: 2px solid var(--pt-red);
+  outline-offset: 2px;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+}
+.status {
+  font-size: 11px;
+  color: var(--text-muted);
+}
