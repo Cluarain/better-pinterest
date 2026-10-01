@@ -30,7 +30,6 @@
         "src/content/features/bars.js",
         "src/content/features/pinGlobal.js",
         "src/content/features/mediaAutoplay.js",
-        "src/content/features/autoScroll.js",
         "src/content/styles/master.css"
       ],
       "matches": ["https://*.pinterest.com/*"]

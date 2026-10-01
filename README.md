@@ -16,7 +16,6 @@ Toggles are grouped in the popup by what they affect:
 | Bars & Panels | **Hide tabs bar** | Hides the tabs bar on the home feed |
 | Pins | **Hide pin menu** | Hides the "⋯" more-options menu on pins |
 | Feed & Media | **Media autoplay** | Restarts muted looping playback of feed videos/GIFs |
-| Feed & Media | **Auto scroll** | Scrolls the feed automatically (slow / normal / fast) |
 
 State persists per-browser in `chrome.storage.local`, so your toggles survive
 reloads and restarts.

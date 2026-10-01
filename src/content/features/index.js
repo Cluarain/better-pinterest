@@ -32,7 +32,7 @@ import { darkMode } from './darkMode.js';
 import * as bars from './bars.js';
 import * as pinGlobal from './pinGlobal.js';
 import { mediaAutoplay, MediaAutoplayFeature } from './mediaAutoplay.js';
-import { autoScroll, AutoScrollFeature } from './autoScroll.js';
+// import { autoScroll, AutoScrollFeature } from './autoScroll.js';
 
 /**
  * Collect every exported feature config from a barrel module namespace object
@@ -74,7 +74,7 @@ export const FEATURE_GROUPS = [
     title: 'Feed & Media',
     features: [
       new MediaAutoplayFeature(mediaAutoplay),
-      new AutoScrollFeature(autoScroll),
+      // new AutoScrollFeature(autoScroll),
     ],
   },
 ];

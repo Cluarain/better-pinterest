@@ -34,8 +34,7 @@ modules directly from `src/`.
     │   │   ├── darkMode.js     # CSS  → html.pt-dark
     │   │   ├── bars.js         # CSS  → bar features (auto-collected)
     │   │   ├── pinGlobal.js    # CSS  → global pin appearance (auto-collected)
-    │   │   ├── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
-    │   │   └── autoScroll.js   # JS   → auto-scroll loop + `speed` setting
+    │   │   └── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
     │   └── styles
     │       └── master.css      # ALL visual rules, scoped to html classes
     └── popup
@@ -108,7 +107,6 @@ export class MyFeature extends BaseFeature {
 
 ## How to add a feature setting (non-boolean option)
 
-A feature can expose options beyond on/off — see `autoScroll.js` (scroll speed).
 Declare a `settings` array on the config; the popup renders a control per
 setting and the registry persists it under the storage key
 `<featureId>.<settingId>` (`settingKey()` / `parseSettingKey()` in
