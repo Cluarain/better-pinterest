@@ -6,7 +6,7 @@ through a popup with toggles. Built around three ideas:
 1. **State** lives in `chrome.storage.local` (single source of truth).
 2. **CSS does the styling.** One master stylesheet is injected once
    (`<style id="pt-master-styles">`); toggling a feature only adds/removes a
-   class on `<body>` (`pt-dark`, `pt-hide-search`, ...). No inline styles,
+   class on `<html>` (`pt-dark`, `pt-hide-search`, ...). No inline styles,
    no `insertCSS` per toggle, no flicker.
 3. **JS stays tiny.** Only features that need real logic subclass `BaseFeature`;
    the shared `FeatureRegistry` handles init / enable / disable / revert.
@@ -33,13 +33,13 @@ through a popup with toggles. Built around three ideas:
     │   │   └── observer.js     # MutationObserver wrapper (rAF batching)
     │   ├── features
     │   │   ├── index.js        # catalogue + DEFAULT_STATE (THE place to register)
-    │   │   ├── darkMode.js     # CSS  → body.pt-dark
-    │   │   ├── leftMenu.js     # CSS  → body.pt-hide-left-menu
-    │   │   ├── searchBar.js    # CSS  → body.pt-hide-search
-    │   │   ├── pinBurger.js    # CSS  → body.pt-hide-burger
-    │   │   └── mediaAutoplay.js# JS   → body.pt-autoplay-media + video logic
+    │   │   ├── darkMode.js     # CSS  → html.pt-dark
+    │   │   ├── leftMenu.js     # CSS  → html.pt-hide-left-menu
+    │   │   ├── searchBar.js    # CSS  → html.pt-hide-search
+    │   │   ├── pinBurger.js    # CSS  → html.pt-hide-pin-menu-footer
+    │   │   └── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
     │   └── styles
-    │       └── master.css      # ALL visual rules, scoped to body classes
+    │       └── master.css      # ALL visual rules, scoped to html classes
     └── popup
         ├── popup.html          # control panel markup
         ├── popup.css           # toggle switch styles
@@ -48,9 +48,9 @@ through a popup with toggles. Built around three ideas:
 
 ## How to add a CSS toggle (3 steps — no core changes)
 
-1. **`src/content/styles/master.css`** — add rules scoped to a new body class:
+1. **`src/content/styles/master.css`** — add rules scoped to a new html class:
    ```css
-   body.pt-hide-comments [data-test-id="comments"] { display: none !important; }
+   html.pt-hide-comments [data-test-id="comments"] { display: none !important; }
    ```
 2. **`src/content/features/myFeature.js`** — declare the config:
    ```js
@@ -58,7 +58,7 @@ through a popup with toggles. Built around three ideas:
      id: 'myFeature',
      title: 'Hide Comments',
      type: 'css',
-     bodyClass: 'pt-hide-comments',
+     htmlClass: 'pt-hide-comments',
      defaultValue: false,
      description: 'Hides the comment section.',
    };
@@ -94,8 +94,15 @@ the placeholder selectors from the design doc; candidate selectors observed in
 community userscripts (2025–2026) are listed as comments in both files. When a
 toggle stops working, that is where to look first.
 
-> Tip: `window.__ptTweaker` is exposed in the page console on Pinterest —
-> it gives access to the live `registry` and `state`.
+> Debugging tips (Pinterest tab, DevTools):
+> - The Elements panel / page console show `<html data-pt-tweaker="ready">`
+>   and `data-pt-state='{"darkMode":true,...}'` — whether the content script
+>   booted and which state it applies. These are plain DOM attributes, so they
+>   are visible from the page console, unlike `window.__ptTweaker` (an
+>   isolated-world global that reads `undefined` in the default console context).
+> - Bootstrap logs use `console.info` — visible without enabling "Verbose".
+> - Toggle a feature live from the page console:
+>   `document.dispatchEvent(new CustomEvent('pt-tweaker:toggle', { detail: { id: 'darkMode', enabled: true } }))`
 
 ## Data flow
 
@@ -104,7 +111,7 @@ toggle stops working, that is where to look first.
    message to the background worker (routing / logging extension point).
 3. Content scripts receive the change via `chrome.storage.onChanged` (and, as a
    redundant path, the runtime message) and call `registry.apply(id, enabled)`.
-4. CSS features: the registry adds/removes the body class — `master.css` does
+4. CSS features: the registry adds/removes the html class — `master.css` does
    the rest. JS features: `feature.enable()` / `feature.disable()` run.
 5. On reload, `content/index.js` reads storage once and re-applies everything.
 

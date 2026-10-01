@@ -5,7 +5,9 @@
      <style id="pt-master-styles"> ... </style>
 
    Feature toggles never touch element styles: JS only adds/removes a class
-   on <body>, every visual rule below is scoped to those body classes.
+   on <html>, every visual rule below is scoped to those html classes.
+   (`<html>` is the anchor because Pinterest's own scripts sometimes rewrite
+   `document.body.className` wholesale and would wipe body-level markers.)
 
    SELECTOR POLICY (design doc §7):
    Pinterest re-rolls generated class names on every deploy. Prefer
@@ -20,30 +22,228 @@
    ============================================================================ */
 
 /* ---------------------------------------------------------------------------
-   4.1 Dark Mode — body.pt-dark                (feature: darkMode)
+   4.1 Dark Mode — html.pt-dark                (feature: darkMode)
    Base rules only, per design doc §4.1.
    TODO(future): inject custom CSS variables instead of these base rules so
    the theme can be fully tuned (accent, surface tones, ...).
 ---------------------------------------------------------------------------- */
-body.pt-dark {
-  background: #000 !important;
-  color: #fff !important;
+html.pt-dark {
+   /* --sema-color-background-default: hsl(0, 0%, 10%);
+   --sema-color-text-default: #fff;
+   background: var(--sema-color-background-default) !important;
+   color: var(--sema-color-text-default) !important; */
+
+   color-scheme: dark;
+
+   /* ------------------------------------------------------------------ *
+   * 1. SURFACES (backgrounds)
+   * ------------------------------------------------------------------ */
+
+   /* Base */
+   --sema-color-background-default: #181816;
+   --sema-color-background-secondary: #242421;
+   --sema-color-background-tertiary: #33332e;
+   --sema-color-background-subtle: #242421;
+
+   /* Elevation / modals / popovers */
+   --sema-color-background-elevation: #242421;
+   --sema-color-background-elevated-opaque-default: #242421;
+   --sema-color-background-elevated-opaque-secondary: #33332e;
+   --sema-color-background-elevated-opaque-tertiary: #494943;
+   --sema-color-background-elevated-opaque-subtle: #181816;
+
+   /* Wash-* — tints over images / overlays */
+   --sema-color-background-elevated-wash-50-default: rgba(36, 36, 33, .5);
+   --sema-color-background-elevated-wash-50-light: rgba(36, 36, 33, .5);
+   --sema-color-background-elevated-wash-50-dark: rgba(0, 0, 0, .5);
+   --sema-color-background-elevated-wash-50-inverse: rgba(0, 0, 0, .5);
+   --sema-color-background-elevated-wash-70-default: rgba(36, 36, 33, .7);
+   --sema-color-background-elevated-wash-70-light: rgba(36, 36, 33, .7);
+   --sema-color-background-elevated-wash-70-dark: rgba(0, 0, 0, .7);
+   --sema-color-background-elevated-wash-70-inverse: rgba(0, 0, 0, .7);
+   --sema-color-background-elevated-wash-image-tint: rgba(255, 255, 255, .04);
+
+   /* Scrims */
+   --sema-color-background-elevated-scrim-translucent: rgba(0, 0, 0, .6);
+   --sema-color-background-elevated-scrim-opaque: linear-gradient(180deg,
+         rgba(36, 36, 33, .8) 40%,
+         rgba(36, 36, 33, .8));
+
+   /* Utility */
+   --sema-color-background-disabled: #33332e;
+   --sema-color-background-selected: #c8c8c1;
+   --sema-color-background-inverse: #f6f6f3;
+   --sema-color-background-dark: #f6f6f3;
+   --sema-color-background-light: #242421;
+
+   /* Neutral */
+   --sema-color-background-neutral-default: #c8c8c1;
+   --sema-color-background-neutral-weak: #33332e;
+
+   /* Info / Error / Warning / Success / Recommendation — "weak" backplates
+     on a dark background must be dark, not pastel. */
+   --sema-color-background-info-weak: #0d1645;
+   --sema-color-background-error-weak: #3d0000;
+   --sema-color-background-warning-weak: #291000;
+   --sema-color-background-success-weak: #081c11;
+   --sema-color-background-recommendation-weak: #2d0033;
+
+   /* ------------------------------------------------------------------ *
+   * 2. TEXT
+   * ------------------------------------------------------------------ */
+   --sema-color-text-default: #f6f6f3;
+   --sema-color-text-neutral: #c8c8c1;
+   --sema-color-text-subtle: #91918c;
+   --sema-color-text-disabled: #62625b;
+   --sema-color-text-inverse: #181816;
+   --sema-color-text-dark: #f6f6f3;
+   --sema-color-text-light: #181816;
+
+   /* Links / accents — slightly lighter than in the light theme */
+   --sema-color-text-link: #92a4ff;
+   --sema-color-text-info: #92a4ff;
+   --sema-color-text-success: #83ddad;
+   --sema-color-text-warning: #ffb380;
+   --sema-color-text-error: #ff8f8f;
+   --sema-color-text-recommendation: #ef9ff9;
+
+   /* ------------------------------------------------------------------ *
+   * 3. ICONS
+   * ------------------------------------------------------------------ */
+   --sema-color-icon-default: #f6f6f3;
+   --sema-color-icon-neutral: #c8c8c1;
+   --sema-color-icon-subtle: #91918c;
+   --sema-color-icon-disabled: #62625b;
+   --sema-color-icon-inverse: #181816;
+   --sema-color-icon-dark: #f6f6f3;
+   --sema-color-icon-light: #181816;
+
+   --sema-color-icon-link: #92a4ff;
+   --sema-color-icon-info: #92a4ff;
+   --sema-color-icon-success: #83ddad;
+   --sema-color-icon-warning: #ffb380;
+   --sema-color-icon-error: #ff8f8f;
+   --sema-color-icon-recommendation: #ef9ff9;
+
+   /* ------------------------------------------------------------------ *
+   * 4. BORDERS
+   * ------------------------------------------------------------------ */
+   --sema-color-border-decorative: #494943;
+   --sema-color-border-dark-decorative: #62625b;
+   --sema-color-border-light-decorative: #33332e;
+   --sema-color-border-interactive: #62625b;
+   --sema-color-border-dark-interactive: #91918c;
+   --sema-color-border-light-interactive: #494943;
+   --sema-color-border-disabled: #33332e;
+   --sema-color-border-selected: #c8c8c1;
+   --sema-color-border-inverse: #181816;
+
+   /* Focus ring: inner ring = background color, outer ring = accent */
+   --sema-color-border-focus-inner-default: #181816;
+   --sema-color-border-focus-outer-default: #677eee;
+   --sema-color-border-focus-inner-inverse: #f6f6f3;
+   --sema-color-border-focus-outer-inverse: #92a4ff;
+   --sema-color-border-focus-inner-dark: #181816;
+   --sema-color-border-focus-outer-dark: #677eee;
+   --sema-color-border-focus-inner-light: #f6f6f3;
+   --sema-color-border-focus-outer-light: #677eee;
+
+   /* ------------------------------------------------------------------ *
+   * 5. SHADOWS — need to stand out more on a dark background
+   * ------------------------------------------------------------------ */
+   --sema-elevation-shadow-floating: 0 3px 12px 0 rgba(0, 0, 0, .6);
+   --sema-elevation-shadow-raised: 0 1.5px 6px 0 rgba(0, 0, 0, .6);
+   --sema-elevation-shadow-surface: 0 .5px 3px 0 rgba(0, 0, 0, .6);
+   --sema-elevation-shadow-floating-shadow-color: rgba(0, 0, 0, .6);
+   --sema-elevation-shadow-raised-shadow-color: rgba(0, 0, 0, .6);
+   --sema-elevation-shadow-surface-shadow-color: rgba(0, 0, 0, .6);
+
+   /* ------------------------------------------------------------------ *
+   * 6. Hover / pressed for surfaces — otherwise components "flash"
+   *    white on hover.
+   * ------------------------------------------------------------------ */
+   --sema-color-hover-background-default: #242421;
+   --sema-color-pressed-background-default: #33332e;
+   --sema-color-hover-background-secondary: #33332e;
+   --sema-color-pressed-background-secondary: #494943;
+   --sema-color-hover-background-tertiary: #494943;
+   --sema-color-pressed-background-tertiary: #62625b;
+   --sema-color-hover-background-elevation: #33332e;
+   --sema-color-pressed-background-elevation: #494943;
+   --sema-color-hover-background-elevated-opaque-default: #33332e;
+   --sema-color-pressed-background-elevated-opaque-default: #494943;
+   --sema-color-hover-background-selected: #e5e5e0;
+   --sema-color-pressed-background-selected: #fff;
+
+   --sema-color-hover-text-default: #fff;
+   --sema-color-pressed-text-default: #fff;
+   --sema-color-hover-icon-default: #fff;
+   --sema-color-pressed-icon-default: #fff;
+   --sema-color-hover-border-decorative: #62625b;
+   --sema-color-pressed-border-decorative: #74746c;
+   --sema-color-hover-border-interactive: #91918c;
+   --sema-color-pressed-border-interactive: #74746c;
+
+
+   /* ------------------------------------------------------------------ *
+   * 7. Additional single components
+   * ------------------------------------------------------------------ */
+   [data-test-id="closeup-metadata-details-divider"] {
+      border-color: var(--sema-color-border-decorative) !important;
+   }
+}
+
+/* ---------------------------------------------------------------------------
+   4.1 Dark Mode — extension popup (control panel)      (feature: darkMode)
+   The SAME `pt-dark` class drives both documents: the content script adds it
+   to the Pinterest page, popup.js adds it to the popup's <html>. popup.html
+   links this stylesheet (after popup.css), so flipping the Dark Mode toggle
+   themes the control panel too.
+
+   Popup-only rules are scoped with `:has(#featureList)` (the popup's toggle
+   list) so they can never leak into the Pinterest page; the popup class names
+   below (.toggle-row, .toggle-badge, ...) don't exist there either.
+---------------------------------------------------------------------------- */
+
+/* popup.css design tokens — set on the same element as :root, but with higher
+   specificity, so they win inside the popup without touching the page. */
+html.pt-dark:has(#featureList) {
+   --bg: #181816;
+   --bg-soft: #242421;
+   --text: #f6f6f3;
+   --text-muted: #91918c;
+   --border: #494943;
+   --track-off: #62625b;
+}
+
+/* The light-pink "JS" badge would glow on a dark surface — use the
+   error-weak / error palette from §4.1 instead. */
+html.pt-dark:has(#featureList) .toggle-badge--js {
+   background: #3d0000;
+   color: #ff8f8f;
+   border-color: #6b2b2b;
 }
 
 /*
    Quick-dirty alternative while iterating (inverts the whole page; media must
    then be inverted back). Uncomment to try:
-body.pt-dark { filter: invert(0.92) hue-rotate(180deg) !important; }
-body.pt-dark img,
-body.pt-dark video,
-body.pt-dark picture { filter: invert(1) hue-rotate(180deg) !important; }
+html.pt-dark { filter: invert(0.92) hue-rotate(180deg) !important; }
+html.pt-dark img,
+html.pt-dark video,
+html.pt-dark picture { filter: invert(1) hue-rotate(180deg) !important; }
 */
 
 /* ---------------------------------------------------------------------------
-   4.1 Search Bar — body.pt-hide-search         (feature: searchBar)
+   4.1 Search Bar — html.pt-hide-search         (feature: searchBar)
 ---------------------------------------------------------------------------- */
-body.pt-hide-search [data-test-id="search-bar"] {
-  display: none !important;
+html.pt-hide-search {
+   #HeaderContent {
+      display: none !important;
+   }
+
+   .mainContainer {
+      padding-top: 1rem;
+   }
 }
 
 /*
@@ -55,10 +255,24 @@ body.pt-hide-search [data-test-id="search-bar"] {
 */
 
 /* ---------------------------------------------------------------------------
-   4.1 Left Menu — body.pt-hide-left-menu      (feature: leftMenu)
+   4.1 Left Menu — html.pt-hide-left-menu      (feature: leftMenu)
 ---------------------------------------------------------------------------- */
-body.pt-hide-left-menu [data-test-id="left-menu"] {
-  display: none !important;
+html.pt-hide-left-menu {
+   #VerticalNavContent {
+      display: none !important;
+   }
+
+   .appContent>div {
+      padding-inline-start: 0 !important;
+   }
+
+   #HeaderContent {
+      left: 0 !important;
+   }
+
+   [data-test-id="back-button"]>div {
+      margin-inline-start: -86px;
+   }
 }
 
 /*
@@ -67,11 +281,17 @@ body.pt-hide-left-menu [data-test-id="left-menu"] {
 */
 
 /* ---------------------------------------------------------------------------
-   4.1 Pin Burger Menu — body.pt-hide-burger   (feature: pinBurger)
+   4.1 Pin Burger Menu — html.pt-hide-pin-menu-footer   (feature: pinBurger)
    Hides the "⋯" / more-options action menu shown on pin hover.
 ---------------------------------------------------------------------------- */
-body.pt-hide-burger [data-test-id="pin-burger-menu"] {
-  display: none !important;
+html.pt-hide-pin-menu-footer {
+
+   [data-test-id="pin-missing-alt-text"],
+   [data-test-id="pin-with-alt-text"] {
+      [data-test-id="pointer-events-wrapper"] {
+         display: none !important;
+      }
+   }
 }
 
 /*
@@ -85,12 +305,12 @@ body.pt-hide-burger [data-test-id="pin-burger-menu"] {
 */
 
 /* ---------------------------------------------------------------------------
-   4.2 Media Autoplay — body.pt-autoplay-media (feature: mediaAutoplay)
+   4.2 Media Autoplay — html.pt-autoplay-media (feature: mediaAutoplay)
    Styling for the <video> elements created by mediaAutoplay.js — kept here
    (CSS) instead of inline styles, per the DRY approach.
 ---------------------------------------------------------------------------- */
-body.pt-autoplay-media video[data-pt-gif-video] {
-  display: block;
-  width: 100%;
-  height: auto;
+html.pt-autoplay-media video[data-pt-gif-video] {
+   display: block;
+   width: 100%;
+   height: auto;
 }

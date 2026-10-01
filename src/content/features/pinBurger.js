@@ -3,15 +3,15 @@
  * ============================================================================
  * CSS-driven feature — Pin Burger Menu (the "⋯" / more-options menu that
  * appears over a pin on hover).
- * Body class: `pt-hide-burger`
+ * HTML class: `pt-hide-pin-menu-footer`
  * ============================================================================
  */
 
 export const pinBurger = {
   id: 'pinBurger',
-  title: 'Hide Pin Burger Menu',
+  title: 'Hide Pin Menu',
   type: 'css',
-  bodyClass: 'pt-hide-burger',
+  htmlClass: 'pt-hide-pin-menu-footer',
   defaultValue: false,
-  description: 'Hides the hover "more options" menu on pins.',
+  description: 'Hides "more options" menu on pins.',
 };

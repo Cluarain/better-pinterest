@@ -8,7 +8,7 @@
  * ============================================================================
  */
 
-import { FEATURES, DEFAULT_STATE } from '../content/features/index.js';
+import { FEATURES, DEFAULT_STATE, getFeature } from '../content/features/index.js';
 import { Storage } from '../content/core/storage.js';
 
 /** Message contract shared with the background worker and content script. */
@@ -69,12 +69,22 @@ function getInput(featureId) {
   );
 }
 
+/**
+ * Mirror the stored darkMode state onto the popup document itself.
+ * The control-panel rules live in master.css under `html.pt-dark` — the same
+ * class the content script toggles on the Pinterest page.
+ */
+function applyPopupTheme(state) {
+  document.documentElement.classList.toggle('pt-dark', Boolean(state.darkMode));
+}
+
 async function syncFromStorage() {
   const state = await store.getAll(DEFAULT_STATE);
   for (const feature of FEATURES) {
     const input = getInput(feature.id);
     if (input) input.checked = Boolean(state[feature.id]);
   }
+  applyPopupTheme(state);
 }
 
 async function handleToggle(event) {
@@ -82,17 +92,36 @@ async function handleToggle(event) {
   if (!(input instanceof HTMLInputElement) || !input.matches('.toggle-input')) return;
 
   const featureId = input.dataset.featureId;
+  const feature = getFeature(featureId);
   const enabled = input.checked;
+  const tag = feature?.title ?? featureId;
 
   // 1) Persist (single source of truth — content scripts apply via storage).
   await store.set(featureId, enabled);
+
   // 2) Notify the background worker (message-routing / extension point).
   try {
     await chrome.runtime.sendMessage({ type: MESSAGE_TYPE, featureId, enabled });
   } catch {
-    /* no receiver (worker restarting?) — the storage change already applied */
+    /* optional channel — the storage change already applies everywhere */
   }
-  statusEl.textContent = `${enabled ? 'Enabled' : 'Disabled'} ${featureId}`;
+
+  // 3) Push directly to the active tab and report whether a content script
+  //    actually received it. If the tab has no receiver, the Pinterest page
+  //    was opened before the extension was (re)loaded and needs a refresh.
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const response = tab?.id
+      ? await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPE, featureId, enabled })
+      : null;
+    if (response?.ok) {
+      statusEl.textContent = `${enabled ? 'Enabled' : 'Disabled'} ${tag} — applied on page`;
+      return;
+    }
+  } catch {
+    /* no content script in the active tab */
+  }
+  statusEl.textContent = `Saved ${tag}. Open or reload pinterest.com to see it.`;
 }
 
 function init() {
@@ -105,6 +134,9 @@ function init() {
     for (const [featureId, change] of Object.entries(changes)) {
       const input = getInput(featureId);
       if (input && typeof change.newValue === 'boolean') input.checked = change.newValue;
+    }
+    if ('darkMode' in changes) {
+      applyPopupTheme({ darkMode: changes.darkMode.newValue });
     }
   });
 

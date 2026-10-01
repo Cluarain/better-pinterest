@@ -10,7 +10,7 @@
  * Exports
  * -------
  *   BaseFeature      : the standard interface every feature implements.
- *   CssFeature       : a CSS-driven feature — toggling one <body> class is a
+ *   CssFeature       : a CSS-driven feature — toggling one <html> class is a
  *                      complete implementation (the visual rules live in
  *                      master.css). No per-feature JS styling code.
  *   FeatureRegistry  : registers features and owns the lifecycle
@@ -21,6 +21,9 @@
 /** Log prefix used by all internal logging. */
 const LOG_PREFIX = '[pt-tweaker]';
 
+/** Safety cap for the <html> class guard (see FeatureRegistry.startClassGuard). */
+const CLASS_GUARD_MAX_REPAIRS = 50;
+
 export class BaseFeature {
   /**
    * @param {Object} config
@@ -28,7 +31,8 @@ export class BaseFeature {
    * @param {string}   [config.title]         Human readable name (popup).
    * @param {string}   [config.description]   Short description for the popup.
    * @param {string}   [config.type]          'css' (default) or 'js'.
-   * @param {string}   [config.bodyClass]     Class toggled on <body>.
+   * @param {string}   [config.htmlClass]     Class toggled on <html>.
+   * @param {string}   [config.bodyClass]     Legacy alias of `htmlClass`.
    * @param {boolean}  [config.defaultValue]  Default persisted state.
    */
   constructor(config = {}) {
@@ -36,7 +40,7 @@ export class BaseFeature {
     this.title = config.title ?? this.id;
     this.description = config.description ?? '';
     this.type = config.type ?? 'css';
-    this.bodyClass = config.bodyClass ?? null;
+    this.htmlClass = config.htmlClass ?? config.bodyClass ?? null;
     this.defaultValue = Boolean(config.defaultValue);
 
     /** @type {boolean} current enabled state */
@@ -71,12 +75,12 @@ export class BaseFeature {
 
   /**
    * Turn the feature ON:
-   *   1. adds `bodyClass` to <body> (CSS-driven styling happens here), then
+   *   1. adds `htmlClass` to <html> (CSS-driven styling happens here), then
    *   2. runs the `onEnable()` hook for JS-driven logic.
    */
   enable() {
     if (this._enabled) return this;
-    if (this.bodyClass) document.body?.classList.add(this.bodyClass);
+    if (this.htmlClass) document.documentElement?.classList.add(this.htmlClass);
     try {
       this.onEnable();
     } catch (err) {
@@ -89,7 +93,7 @@ export class BaseFeature {
   /**
    * Turn the feature OFF (revert everything enable() did):
    *   1. runs the `onDisable()` hook for JS-driven logic, then
-   *   2. removes `bodyClass` from <body>.
+   *   2. removes `htmlClass` from <html>.
    */
   disable() {
     if (!this._enabled) return this;
@@ -98,7 +102,7 @@ export class BaseFeature {
     } catch (err) {
       this._warn('onDisable failed', err);
     }
-    if (this.bodyClass) document.body?.classList.remove(this.bodyClass);
+    if (this.htmlClass) document.documentElement?.classList.remove(this.htmlClass);
     this._enabled = false;
     return this;
   }
@@ -120,15 +124,15 @@ export class BaseFeature {
   }
 
   _log(...args) {
-    console.debug(`${LOG_PREFIX} [${this.id}]`, ...args);
+    console.info(`${LOG_PREFIX} [${this.id}]`, ...args);
   }
 }
 
 /**
  * CSS-driven feature.
  *
- * The whole "implementation" is the `bodyClass` in the constructor config:
- * the registry adds/removes it on <body> and master.css does the rest.
+ * The whole "implementation" is the `htmlClass` in the constructor config:
+ * the registry adds/removes it on <html> and master.css does the rest.
  * Use for simple show/hide/theme toggles that need NO JS logic.
  */
 export class CssFeature extends BaseFeature {
@@ -145,6 +149,22 @@ export class FeatureRegistry {
     /** @type {Map<string, BaseFeature>} */
     this._features = new Map();
     features.forEach((feature) => this.register(feature));
+
+    /**
+     * Debug hook — called with the live state object after every change.
+     * The content script mirrors it into <html data-pt-state>, which (unlike
+     * window.__ptTweaker, an isolated-world global) is visible from the page
+     * console and the Elements panel.
+     * @type {((state: Record<string, boolean>) => void)|null}
+     */
+    this.onStateChange = null;
+
+    /** @type {MutationObserver|null} <html> class guard (see startClassGuard) */
+    this._guard = null;
+    /** @type {Map<string, number>} repairs per class — reset on user toggles */
+    this._guardCounts = new Map();
+    /** @type {Set<string>} classes we already gave up on and warned about */
+    this._guardWarned = new Set();
   }
 
   /**
@@ -187,6 +207,8 @@ export class FeatureRegistry {
         feature._warn(`apply(${Boolean(state[feature.id])}) failed`, err);
       }
     }
+    this.startClassGuard();
+    this._notifyState();
     return this;
   }
 
@@ -200,6 +222,12 @@ export class FeatureRegistry {
     const feature = this._features.get(featureId);
     if (!feature) return false;
     feature.apply(Boolean(enabled));
+    // A deliberate state change resets the guard budget for this class.
+    if (feature.htmlClass) {
+      this._guardCounts.delete(feature.htmlClass);
+      this._guardWarned.delete(feature.htmlClass);
+    }
+    this._notifyState();
     return true;
   }
 
@@ -238,7 +266,59 @@ export class FeatureRegistry {
     return Object.fromEntries(this.all.map((feature) => [feature.id, feature.enabled]));
   }
 
-  /** Tear everything down (beforeunload etc.). */
+  /**
+   * Mirror the live state to the `onStateChange` hook (see constructor).
+   */
+  _notifyState() {
+    if (typeof this.onStateChange !== 'function') return;
+    try {
+      this.onStateChange(this.state);
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} onStateChange hook failed`, err);
+    }
+  }
+
+  /**
+   * Class guard — Pinterest's scripts may rewrite the `class` attribute
+   * wholesale (often on <body>) and wipe our markers. One MutationObserver
+   * re-adds every class whose feature is enabled. Repairs are capped at
+   * CLASS_GUARD_MAX_REPAIRS per class (the budget resets on each user toggle)
+   * so we can never spin in an add/remove fight with the page.
+   */
+  startClassGuard() {
+    if (this._guard || typeof MutationObserver === 'undefined') return this;
+    const root = document.documentElement;
+    if (!root) return this;
+    this._guard = new MutationObserver(() => this._ensureOwnedClasses());
+    this._guard.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return this;
+  }
+
+  /** Re-add any owned class that the page removed while its feature is on. */
+  _ensureOwnedClasses() {
+    const root = document.documentElement;
+    if (!root) return;
+    for (const feature of this.all) {
+      if (!feature.enabled || !feature.htmlClass) continue;
+      if (root.classList.contains(feature.htmlClass)) continue;
+      const repairs = (this._guardCounts.get(feature.htmlClass) ?? 0) + 1;
+      if (repairs > CLASS_GUARD_MAX_REPAIRS) {
+        if (!this._guardWarned.has(feature.htmlClass)) {
+          this._guardWarned.add(feature.htmlClass);
+          console.warn(
+            `${LOG_PREFIX} "${feature.htmlClass}" keeps being removed by the page ` +
+              `(${CLASS_GUARD_MAX_REPAIRS} repairs) — giving up; something on the ` +
+              'page is wiping <html class>.',
+          );
+        }
+        continue;
+      }
+      this._guardCounts.set(feature.htmlClass, repairs);
+      root.classList.add(feature.htmlClass);
+    }
+  }
+
+  /** Tear everything down (beforeunload etc). */
   destroyAll() {
     for (const feature of this.all) {
       try {

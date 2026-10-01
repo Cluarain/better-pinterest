@@ -1,18 +1,16 @@
 /**
  * mediaAutoplay.js
  * ============================================================================
- * JS-driven feature — Media Autoplay.
- * Body class: `pt-autoplay-media`
+ * JS-driven feature — Media Autoplay + GIF Originals.
+ * HTML class: `pt-autoplay-media`
  *
- * Pinterest stops/hovers media by default; when enabled this feature:
- *   1. force-autoplays every <video> it can reach (muted + loop, as required
- *      by browser autoplay policies), and
- *   2. replaces static/animated <img> pins (GIFs) with an equivalent
- *      <video autoplay muted loop> element (falling back to the GIF URL if
- *      the `.mp4` sibling is unavailable).
+ * 1. force-autoplays every <video> it can reach (muted + loop);
+ * 2. for GIF pins Pinterest often renders as a static .jpg preview with the
+ *    real .gif hidden inside `srcset` (4x / originals). This feature swaps
+ *    `src` to that original .gif and removes `srcset`, so the animated GIF
+ *    is shown instead of the jpg thumbnail.
  *
- * Detecting newly rendered pins is handled by the shared `DomObserver`
- * wrapper — no per-feature MutationObserver boilerplate.
+ * ONLY GIF pins are touched — regular image pins are left alone.
  *
  * IMPORTANT (selector maintenance):
  *   Pinterest swaps generated class names on every deploy. All DOM selectors
@@ -35,20 +33,29 @@ export const MEDIA_SELECTORS = {
   /** Elements that should be autoplayed. */
   video: 'video',
 
-  /** Static images that may actually be animated content / GIFs. */
-  gifImg: 'img[src*=".gif"], img[data-src*=".gif"], img[srcset*=".gif"]',
+  /**
+   * GIF candidates:
+   *   - .gif directly in src / data-src (rare now), OR
+   *   - .gif hidden in srcset / data-srcset (jpg preview case — the common one).
+   */
+  gifImg:
+    'img[src*=".gif"], img[data-src*=".gif"], ' +
+    'img[srcset*=".gif"], img[data-srcset*=".gif"]',
 
   /** Everything this feature processes (used for global scans). */
-  media: 'video, img[src*=".gif"], img[data-src*=".gif"], img[srcset*=".gif"]',
+  media:
+    'video, img[src*=".gif"], img[data-src*=".gif"], ' +
+    'img[srcset*=".gif"], img[data-srcset*=".gif"]',
 };
 
 export const mediaAutoplay = {
   id: 'mediaAutoplay',
   title: 'Media Autoplay',
   type: 'js',
-  bodyClass: 'pt-autoplay-media',
+  htmlClass: 'pt-autoplay-media',
   defaultValue: false,
-  description: 'Autoplays videos and animated GIFs inside pins.',
+  description:
+    'Autoplays videos and GIF pins.',
 };
 
 export class MediaAutoplayFeature extends BaseFeature {
@@ -87,10 +94,11 @@ export class MediaAutoplayFeature extends BaseFeature {
 
   _process(elements) {
     for (const el of elements) {
+      if (!(el instanceof Element)) continue;
       if (el.matches?.(MEDIA_SELECTORS.video)) {
         this._autoplayVideo(el);
       } else if (el.matches?.(MEDIA_SELECTORS.gifImg)) {
-        this._gifToVideo(el);
+        this._gifToOriginal(el);
       }
     }
   }
@@ -122,79 +130,81 @@ export class MediaAutoplayFeature extends BaseFeature {
   }
 
   /**
-   * Replace a static/animated GIF <img> with an autoplaying <video>.
-   * We try the `.mp4` sibling of the `.gif` URL first (Pinterest's CDN
-   * usually serves both); if the video fails to load we transparently
-   * restore the original <img>.
+   * Replace the jpg preview of a GIF pin with the original animated .gif.
+   *
+   * Pinterest serves GIF pins like:
+   *   src    = https://i.pinimg.com/236x/<id>.jpg
+   *   srcset = ...236x/<id>.jpg 1x, ...474x/<id>.jpg 2x,
+   *            ...736x/<id>.jpg 3x, .../originals/<id>.gif 4x
+   *
+   * We pick the .gif entry from srcset and assign it to `src`, then drop
+   * `srcset` entirely so the browser cannot fall back to the jpg variants.
+   * Original values are stored in `data-pt-prev-*` for a clean revert.
    */
-  _gifToVideo(img) {
-    if (img.dataset?.ptGifVideo === '1') return;
-    if (img.closest(MEDIA_SELECTORS.video)) return; // part of a player already
+  _gifToOriginal(img) {
+    if (!(img instanceof HTMLImageElement)) return;
+    if (img.dataset?.ptGifOriginal === '1') return; // already handled
+    if (img.closest(MEDIA_SELECTORS.video)) return; // part of a <video> player
     if (!img.closest(MEDIA_SELECTORS.pin)) return; // only pin media — leave chrome alone
 
-    const src = (img.currentSrc || img.src || img.dataset?.src || '').trim();
-    if (!src || !/\.gif(\?|#|$)/i.test(src)) return;
+    const gifUrl = this._findGifUrl(img);
+    if (!gifUrl) return;
 
-    const container = img.parentElement;
-    if (!container) return;
-
-    const video = document.createElement('video');
-    video.dataset.ptGifVideo = '1';
-    video.muted = true;
-    video.autoplay = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.setAttribute('muted', '');
-    video.setAttribute('autoplay', '');
-    video.setAttribute('loop', '');
-    video.setAttribute('playsinline', '');
-
-    const mp4 = src.replace(/\.gif(\?.*)?$/i, '.mp4$1');
-    if (mp4 !== src) {
-      const source = document.createElement('source');
-      source.src = mp4;
-      source.type = 'video/mp4';
-      video.appendChild(source);
+    // If the current src already points at this gif, nothing to do.
+    const current = (img.currentSrc || img.getAttribute('src') || '').trim();
+    if (current === gifUrl) {
+      img.dataset.ptGifOriginal = '1';
+      return;
     }
-    const sourceGif = document.createElement('source');
-    sourceGif.src = src;
-    sourceGif.type = 'video/gif';
-    video.appendChild(sourceGif);
 
-    // Keep the original so we can restore it if the video never loads.
-    video._ptFallbackImg = img;
+    // Remember original attributes so we can undo on disable.
+    img.dataset.ptGifOriginal = '1';
+    if (img.hasAttribute('src')) img.dataset.ptPrevSrc = img.getAttribute('src');
+    else delete img.dataset.ptPrevSrc;
+    if (img.hasAttribute('srcset')) img.dataset.ptPrevSrcset = img.getAttribute('srcset');
+    else delete img.dataset.ptPrevSrcset;
 
-    container.replaceChild(video, img);
-    this._autoplayVideo(video);
-
-    video.addEventListener(
-      'error',
-      () => {
-        video.replaceWith?.(video._ptFallbackImg);
-        delete video._ptFallbackImg;
-      },
-      { once: true },
-    );
+    // Drop srcset first — otherwise the browser may keep picking a jpg.
+    img.removeAttribute('srcset');
+    img.src = gifUrl;
   }
 
   /**
-   * Undo everything on disable: remove our GIF→video replacements and stop
-   * forcing autoplay on the rest.
+   * Find the original .gif URL for a pin <img>.
+   * Priority: srcset → data-srcset → src → data-src.
+   * @returns {string|null}
+   */
+  _findGifUrl(img) {
+    const srcset =
+      img.getAttribute('srcset') || img.getAttribute('data-srcset') || '';
+    if (srcset) {
+      for (const entry of srcset.split(',')) {
+        const url = entry.trim().split(/\s+/)[0];
+        if (url && /\.gif(\?|#|$)/i.test(url)) return url;
+      }
+    }
+    const src = img.getAttribute('src') || img.getAttribute('data-src') || '';
+    if (/\.gif(\?|#|$)/i.test(src)) return src;
+    return null;
+  }
+
+  /**
+   * Undo everything on disable: restore original src/srcset on GIF imgs and
+   * stop forcing autoplay on the rest.
    */
   _revert() {
-    document.querySelectorAll('video[data-pt-gif-video="1"]').forEach((video) => {
-      const fallback = video._ptFallbackImg;
-      try {
-        video.pause?.();
-      } catch {
-        /* noop */
-      }
-      if (fallback && fallback.parentNode) {
-        video.replaceWith(fallback);
-      } else {
-        video.remove();
-      }
+    document.querySelectorAll('img[data-pt-gif-original="1"]').forEach((img) => {
+      const prevSrc = img.dataset.ptPrevSrc;
+      const prevSrcset = img.dataset.ptPrevSrcset;
+
+      delete img.dataset.ptGifOriginal;
+      delete img.dataset.ptPrevSrc;
+      delete img.dataset.ptPrevSrcset;
+
+      if (prevSrcset != null) img.setAttribute('srcset', prevSrcset);
+      if (prevSrc != null) img.setAttribute('src', prevSrc);
     });
+
     document.querySelectorAll(MEDIA_SELECTORS.video).forEach((video) => {
       if (video.dataset?.ptAutoplayed !== '1') return;
       delete video.dataset.ptAutoplayed;

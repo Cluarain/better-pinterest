@@ -5,7 +5,7 @@
  *
  * Adding a feature is exactly three steps:
  *   1. drop a new file in src/content/features/
- *        - CSS-driven: a plain config object (id / title / bodyClass / ...),
+ *        - CSS-driven: a plain config object (id / title / htmlClass / ...),
  *        - JS-driven:  a BaseFeature subclass with init/onEnable/onDisable.
  *   2. import it and add it to the `FEATURES` array below,
  *   3. add the matching rule(s) to src/content/styles/master.css.
