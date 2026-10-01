@@ -4,21 +4,22 @@
  * JS-driven feature — Media Autoplay + GIF Originals.
  * HTML class: `pt-autoplay-media`
  *
- * 1. Автоплей всех <video> в пинах (muted + loop + playsinline).
- * 2. Форс-раскрытие «заглушек» — Pinterest до hover рендерит только jpg
- *    (pinrep-video--placeholder) и не создаёт <video>. Диспатчим синтетические
- *    pointer/mouse события в центр пина, чтобы Pinterest инжектнул <video>,
- *    а MutationObserver его тут же автоплеит.
- * 3. GIF-пины, которые Pinterest отдаёт статичным jpg с оригиналом .gif в
- *    `srcset` — подменяем `src` на оригинал, `srcset` удаляем.
+ * 1. Autoplay every <video> inside pins (muted + loop + playsinline).
+ * 2. Force-reveal the "placeholders" — until hover Pinterest renders only a jpg
+ *    (pinrep-video--placeholder) and never creates a <video>. We dispatch
+ *    synthetic pointer/mouse events into the center of the pin so Pinterest
+ *    injects the <video>, and the MutationObserver autoplays it right away.
+ * 3. GIF pins that Pinterest serves as a static jpg with the original .gif in
+ *    `srcset` — we swap `src` for the original and drop `srcset`.
  *
- * Производительность:
- *   - Каждый элемент обрабатывается максимум один раз (data-маркер).
- *   - IntersectionObserver откладывает работу до попадания в viewport.
- *   - MutationObserver ходит только по добавленным поддеревьям.
+ * Performance:
+ *   - Every element is processed at most once (data marker).
+ *   - IntersectionObserver defers work until the element enters the viewport.
+ *   - MutationObserver only walks the added subtrees.
  *
  * Selectors maintenance:
- *   Pinterest меняет классы каждый деплой — все селекторы в MEDIA_SELECTORS.
+ *   Pinterest changes class names on every deploy — all selectors live in
+ *   MEDIA_SELECTORS.
  * ============================================================================
  */
 
@@ -40,13 +41,13 @@ export const MEDIA_SELECTORS = {
     'img[srcset*=".gif"], img[data-srcset*=".gif"]',
 };
 
-const MARK = 'ptMediaDone';    // элемент уже обработан
-const GIF_MARK = 'ptGifOriginal';  // src подменён на .gif
-const HOVER_MARK = 'ptHoverNudged';  // пин уже получал синтетический hover
+const MARK = 'ptMediaDone';    // element already processed
+const GIF_MARK = 'ptGifOriginal';  // src swapped to the .gif
+const HOVER_MARK = 'ptHoverNudged';  // pin already received a synthetic hover
 
-/** Фолбэк-задержка отпускания синтетического hover, мс (если <video> не появился). */
+/** Fallback release delay for the synthetic hover, ms (if no <video> appears). */
 const HOVER_RELEASE_MS = 500;
-/** Задержка отпускания hover после появления <video>, мс. */
+/** Hover release delay after the <video> appears, ms. */
 const HOVER_RELEASE_AFTER_VIDEO_MS = 100;
 
 export const mediaAutoplay = {
@@ -65,7 +66,7 @@ export class MediaAutoplayFeature extends BaseFeature {
     this._observer = null;
     /** @type {IntersectionObserver|null} */
     this._io = null;
-    /** @type {Map<Element, number>} пин → id таймера отложенного отпускания hover */
+    /** @type {Map<Element, number>} pin → delayed hover-release timer id */
     this._pendingLeave = new Map();
   }
 
@@ -97,7 +98,7 @@ export class MediaAutoplayFeature extends BaseFeature {
     this._revert();
   }
 
-  /** Снять все отложенные таймеры отпускания hover (чтобы они не сработали после disable). */
+  /** Clear every pending hover-release timer (so none fire after disable). */
   _clearPendingLeave() {
     for (const tid of this._pendingLeave.values()) clearTimeout(tid);
     this._pendingLeave.clear();
@@ -115,7 +116,7 @@ export class MediaAutoplayFeature extends BaseFeature {
     }
   }
 
-  /** Собрать media-элементы внутри root и отдать их IntersectionObserver'у. */
+  /** Collect media elements inside root and hand them to the IntersectionObserver. */
   _scan(root) {
     const found = [];
     if (root instanceof Element && root.matches?.(MEDIA_SELECTORS.media)) {
@@ -158,16 +159,17 @@ export class MediaAutoplayFeature extends BaseFeature {
 
 
   /**
-   * Pinterest создаёт <video> только при hover. Диспатчим синтетические
-   * pointer/mouse enter-события в центр якоря пина, ждём появления <video>
-   * и сразу отпускаем hover, чтобы пин не залипал в hover-состоянии.
+   * Pinterest only creates the <video> on hover. We dispatch synthetic
+   * pointer/mouse enter events into the center of the pin anchor, wait for the
+   * <video> to appear and release the hover right away so the pin does not get
+   * stuck in the hover state.
    */
   _nudgePinToRevealVideo(pin) {
     const target = pin.querySelector('a[href*="/pin/"]') || pin;
     const point = this._centerOf(target);
 
-    // Фолбэк-таймер ставим ДО диспатча: даже если событие/дальнейший код
-    // упадёт, hover всё равно будет отпущен и не «залипнет».
+    // Set the fallback timer BEFORE dispatching: even if the event or the code
+    // that follows throws, the hover is still released and never "sticks".
     const tid = setTimeout(() => this._releasePin(pin), HOVER_RELEASE_MS);
     this._pendingLeave.set(pin, tid);
 
@@ -195,9 +197,9 @@ export class MediaAutoplayFeature extends BaseFeature {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
   /**
-   * Единый диспетчер синтетических pointer/mouse событий.
-   * - pointerover/out + mouseover/out — всплывают, несут relatedTarget;
-   * - pointerenter/leave + mouseenter/leave — НЕ всплывают (как в браузере).
+   * Single dispatcher for synthetic pointer/mouse events.
+   * - pointerover/out + mouseover/out — bubble and carry relatedTarget;
+   * - pointerenter/leave + mouseenter/leave — do NOT bubble (as in the browser).
    */
   _dispatchPointer(target, phase, point) {
     const isEnter = phase === 'enter';
@@ -232,7 +234,7 @@ export class MediaAutoplayFeature extends BaseFeature {
         view: window,
         clientX: point.x,
         clientY: point.y,
-        // relatedTarget имеет смысл только для не-enter/move событий:
+        // relatedTarget only makes sense for non-enter/move events:
         relatedTarget: isEnter ? null : document.body,
       };
 
@@ -272,8 +274,8 @@ export class MediaAutoplayFeature extends BaseFeature {
     const kick = () => this._tryPlay(video);
     kick();
 
-    // Pinterest часто подменяет blob: src уже после монтирования — это
-    // сбрасывает playbackState. Перезапускаем на всех ключевых событиях.
+    // Pinterest often swaps the blob: src after mounting — this resets
+    // playbackState. Restart on every key event.
     video.addEventListener('loadeddata', kick, { once: true });
     video.addEventListener('canplay', kick, { once: true });
     video.addEventListener('loadedmetadata', kick, { once: true });
@@ -281,7 +283,7 @@ export class MediaAutoplayFeature extends BaseFeature {
 
     const pin = video.closest(MEDIA_SELECTORS.pin);
     if (pin && pin.dataset[HOVER_MARK] === '1') {
-      // Небольшая задержка, чтобы Pinterest успел «привязать» видео к пину.
+      // Small delay so Pinterest has time to "bind" the video to the pin.
       setTimeout(() => this._releasePin(pin), HOVER_RELEASE_AFTER_VIDEO_MS);
     }
   }
@@ -316,7 +318,7 @@ export class MediaAutoplayFeature extends BaseFeature {
     if (img.hasAttribute('srcset')) img.dataset.ptPrevSrcset = img.getAttribute('srcset');
     else delete img.dataset.ptPrevSrcset;
 
-    // Сначала убираем srcset — иначе браузер может выбрать jpg-вариант.
+    // Remove srcset first — otherwise the browser may pick the jpg variant.
     img.removeAttribute('srcset');
     img.src = gifUrl;
   }

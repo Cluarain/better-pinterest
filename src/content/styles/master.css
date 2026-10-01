@@ -120,7 +120,7 @@ html.pt-dark {
    --base-color-pressed-grayscale-25: #000;
    --base-color-pressed-grayscale-0: #242421;
 
-   /* --base-color-pressed-pinterest — не трогаем, бренд-цвет. */
+   /* --base-color-pressed-pinterest — leave it alone, brand color. */
 
    /* ====================================================================== *
    * HOVER
@@ -211,10 +211,10 @@ html.pt-dark {
    --base-color-hover-grayscale-25: #10100f;
    --base-color-hover-grayscale-0: #181816;
 
-   /* --base-color-hover-pinterest — не трогаем. */
+   /* --base-color-hover-pinterest — leave it alone. */
 
    /* ====================================================================== *
-   * BASE (обычные значения)
+   * BASE (regular values)
    * ====================================================================== */
 
    /* --- orange --- */

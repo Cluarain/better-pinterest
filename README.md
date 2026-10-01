@@ -28,10 +28,19 @@ reloads and restarts.
 
 ## Install (dev mode)
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode** (top right)
-3. **Load unpacked** → select this repository folder
-4. Open `https://www.pinterest.com`, click the toolbar icon, flip a toggle.
+1. Clone the repository and enter its folder:
+
+   ```bash
+   git clone https://github.com/Cluarain/better-pinterest.git
+   cd better-pinterest
+   ```
+
+   (Alternatively, download the ZIP from GitHub and extract it.)
+
+2. Open `chrome://extensions`
+3. Enable **Developer mode** (top right)
+4. **Load unpacked** → select the cloned `better-pinterest` folder
+5. Open `https://www.pinterest.com`, click the toolbar icon, flip a toggle.
 
 ## Notes / limitations
 
