@@ -30,6 +30,279 @@
 html.pt-dark {
    color-scheme: dark;
 
+
+   /* ====================================================================== *
+   * PRESSED
+   * ====================================================================== */
+
+   /* --- orange --- */
+   --base-color-pressed-orange-800: #ffd0ad;
+   --base-color-pressed-orange-700: #ffc199;
+   --base-color-pressed-orange-600: #ff944d;
+   --base-color-pressed-orange-500: #fe7920;
+   --base-color-pressed-orange-400: #c45205;
+   --base-color-pressed-orange-300: #803300;
+   --base-color-pressed-orange-200: #612700;
+   --base-color-pressed-orange-100: #291000;
+   --base-color-pressed-orange-50: #0a0400;
+
+   /* --- green --- */
+   --base-color-pressed-green-800: #bcecd1;
+   --base-color-pressed-green-700: #9ee5bf;
+   --base-color-pressed-green-600: #5bd292;
+   --base-color-pressed-green-500: #238b53;
+   --base-color-pressed-green-400: #045328;
+   --base-color-pressed-green-300: #054221;
+   --base-color-pressed-green-200: #032613;
+   --base-color-pressed-green-100: #05140c;
+   --base-color-pressed-green-50: #010402;
+
+   /* --- blue --- */
+   --base-color-pressed-blue-800: #b8c2ff;
+   --base-color-pressed-blue-700: #a8b7ff;
+   --base-color-pressed-blue-600: #617bff;
+   --base-color-pressed-blue-500: #5069e8;
+   --base-color-pressed-blue-400: #1e3dd7;
+   --base-color-pressed-blue-300: #223aaa;
+   --base-color-pressed-blue-200: #1d2f86;
+   --base-color-pressed-blue-100: #0f1a52;
+   --base-color-pressed-blue-50: #060b22;
+
+   /* --- purple --- */
+   --base-color-pressed-purple-800: #f8b8ff;
+   --base-color-pressed-purple-700: #f5adff;
+   --base-color-pressed-purple-600: #e76ff6;
+   --base-color-pressed-purple-500: #c548d6;
+   --base-color-pressed-purple-400: #8e279b;
+   --base-color-pressed-purple-300: #6c1e76;
+   --base-color-pressed-purple-200: #55185e;
+   --base-color-pressed-purple-100: #240029;
+   --base-color-pressed-purple-50: #09000a;
+
+   /* --- red --- */
+   --base-color-pressed-red-800: #ffb8b8;
+   --base-color-pressed-red-700: #ffa3a3;
+   --base-color-pressed-red-600: #ff5c5c;
+   --base-color-pressed-red-500: #f50a0a;
+   --base-color-pressed-red-400: #ad0b0b;
+   --base-color-pressed-red-300: #860909;
+   --base-color-pressed-red-200: #600606;
+   --base-color-pressed-red-100: #380000;
+   --base-color-pressed-red-50: #140000;
+
+   /* --- grayscale (translucent) --- */
+   --base-color-pressed-grayscale-translucent-500: #efefeb;
+   --base-color-pressed-grayscale-translucent-475: #efefeb;
+   --base-color-pressed-grayscale-translucent-450: #e0e0d6;
+   --base-color-pressed-grayscale-translucent-400: #cecec5;
+   --base-color-pressed-grayscale-translucent-350: #b0b0a6;
+   --base-color-pressed-grayscale-translucent-300: #787873;
+   --base-color-pressed-grayscale-translucent-250: #5a5a54;
+   --base-color-pressed-grayscale-translucent-200: #474742;
+   --base-color-pressed-grayscale-translucent-150: #2d2d29;
+   --base-color-pressed-grayscale-translucent-100: #181816;
+   --base-color-pressed-grayscale-translucent-50: #0b0b0a;
+   --base-color-pressed-grayscale-translucent-25: #000;
+   --base-color-pressed-grayscale-translucent-0: #242421;
+
+   /* --- grayscale --- */
+   --base-color-pressed-grayscale-500: #efefeb;
+   --base-color-pressed-grayscale-475: #efefeb;
+   --base-color-pressed-grayscale-450: #e0e0d6;
+   --base-color-pressed-grayscale-400: #cecec5;
+   --base-color-pressed-grayscale-350: #b0b0a6;
+   --base-color-pressed-grayscale-300: #787873;
+   --base-color-pressed-grayscale-250: #5a5a54;
+   --base-color-pressed-grayscale-200: #474742;
+   --base-color-pressed-grayscale-150: #2d2d29;
+   --base-color-pressed-grayscale-100: #181816;
+   --base-color-pressed-grayscale-50: #0b0b0a;
+   --base-color-pressed-grayscale-25: #000;
+   --base-color-pressed-grayscale-0: #242421;
+
+   /* --base-color-pressed-pinterest — не трогаем, бренд-цвет. */
+
+   /* ====================================================================== *
+   * HOVER
+   * ====================================================================== */
+
+   /* --- orange --- */
+   --base-color-hover-orange-800: #ffdec7;
+   --base-color-hover-orange-700: #ffd0b2;
+   --base-color-hover-orange-600: #ffa366;
+   --base-color-hover-orange-500: #fe8839;
+   --base-color-hover-orange-400: #cf5606;
+   --base-color-hover-orange-300: #993d00;
+   --base-color-hover-orange-200: #7a3100;
+   --base-color-hover-orange-100: #421b00;
+   --base-color-hover-orange-50: #1a0a00;
+
+   /* --- green --- */
+   --base-color-hover-green-800: #cff1df;
+   --base-color-hover-green-700: #b3ebcd;
+   --base-color-hover-green-600: #6fd7a0;
+   --base-color-hover-green-500: #289f5f;
+   --base-color-hover-green-400: #056b34;
+   --base-color-hover-green-300: #075a2d;
+   --base-color-hover-green-200: #053d1f;
+   --base-color-hover-green-100: #0b2819;
+   --base-color-hover-green-50: #05100a;
+
+   /* --- blue --- */
+   --base-color-hover-blue-800: #d1d8ff;
+   --base-color-hover-blue-700: #c2ccff;
+   --base-color-hover-blue-600: #7a90ff;
+   --base-color-hover-blue-500: #5b74f0;
+   --base-color-hover-blue-400: #2c4be2;
+   --base-color-hover-blue-300: #2741bf;
+   --base-color-hover-blue-200: #22379b;
+   --base-color-hover-blue-100: #132167;
+   --base-color-hover-blue-50: #0a1033;
+
+   /* --- purple --- */
+   --base-color-hover-purple-800: #fad1ff;
+   --base-color-hover-purple-700: #f8c7ff;
+   --base-color-hover-purple-600: #eb87f7;
+   --base-color-hover-purple-500: #cc5dda;
+   --base-color-hover-purple-400: #a02caf;
+   --base-color-hover-purple-300: #7e238b;
+   --base-color-hover-purple-200: #681d72;
+   --base-color-hover-purple-100: #3a0042;
+   --base-color-hover-purple-50: #1b001f;
+
+   /* --- red --- */
+   --base-color-hover-red-800: #ffd1d1;
+   --base-color-hover-red-700: #ffbdbd;
+   --base-color-hover-red-600: #ff7575;
+   --base-color-hover-red-500: #f72c2c;
+   --base-color-hover-red-400: #c50c0c;
+   --base-color-hover-red-300: #9e0a0a;
+   --base-color-hover-red-200: #780808;
+   --base-color-hover-red-100: #520000;
+   --base-color-hover-red-50: #290000;
+
+   /* --- grayscale (translucent) --- */
+   --base-color-hover-grayscale-translucent-500: #f6f6f3;
+   --base-color-hover-grayscale-translucent-475: #f6f6f3;
+   --base-color-hover-grayscale-translucent-450: #ebebe5;
+   --base-color-hover-grayscale-translucent-400: #dadad3;
+   --base-color-hover-grayscale-translucent-350: #bcbcb3;
+   --base-color-hover-grayscale-translucent-300: #85857f;
+   --base-color-hover-grayscale-translucent-250: #676760;
+   --base-color-hover-grayscale-translucent-200: #55554f;
+   --base-color-hover-grayscale-translucent-150: #3b3b36;
+   --base-color-hover-grayscale-translucent-100: #262622;
+   --base-color-hover-grayscale-translucent-50: #181816;
+   --base-color-hover-grayscale-translucent-25: #10100f;
+   --base-color-hover-grayscale-translucent-0: #181816;
+
+   /* --- grayscale --- */
+   --base-color-hover-grayscale-500: #f6f6f3;
+   --base-color-hover-grayscale-475: #f6f6f3;
+   --base-color-hover-grayscale-450: #ebebe5;
+   --base-color-hover-grayscale-400: #dadad3;
+   --base-color-hover-grayscale-350: #bcbcb3;
+   --base-color-hover-grayscale-300: #85857f;
+   --base-color-hover-grayscale-250: #676760;
+   --base-color-hover-grayscale-200: #55554f;
+   --base-color-hover-grayscale-150: #3b3b36;
+   --base-color-hover-grayscale-100: #262622;
+   --base-color-hover-grayscale-50: #181816;
+   --base-color-hover-grayscale-25: #10100f;
+   --base-color-hover-grayscale-0: #181816;
+
+   /* --base-color-hover-pinterest — не трогаем. */
+
+   /* ====================================================================== *
+   * BASE (обычные значения)
+   * ====================================================================== */
+
+   /* --- orange --- */
+   --base-color-orange-800: #ffede0;
+   --base-color-orange-700: #ffe0cc;
+   --base-color-orange-600: #ffb380;
+   --base-color-orange-500: #fe9752;
+   --base-color-orange-400: #db5b06;
+   --base-color-orange-300: #b24700;
+   --base-color-orange-200: #943b00;
+   --base-color-orange-100: #5c2500;
+   --base-color-orange-50: #291000;
+
+   /* --- green --- */
+   --base-color-green-800: #e3f7ec;
+   --base-color-green-700: #c7f0da;
+   --base-color-green-600: #83ddad;
+   --base-color-green-500: #2db46c;
+   --base-color-green-400: #068440;
+   --base-color-green-300: #097239;
+   --base-color-green-200: #07552b;
+   --base-color-green-100: #103c25;
+   --base-color-green-50: #081c11;
+
+   /* --- blue --- */
+   --base-color-blue-800: #ebeeff;
+   --base-color-blue-700: #dbe1ff;
+   --base-color-blue-600: #92a4ff;
+   --base-color-blue-500: #677eee;
+   --base-color-blue-400: #435ee5;
+   --base-color-blue-300: #2b48d4;
+   --base-color-blue-200: #273eb0;
+   --base-color-blue-100: #17287d;
+   --base-color-blue-50: #0d1645;
+
+   /* --- purple --- */
+   --base-color-purple-800: #fdebff;
+   --base-color-purple-700: #fbdfff;
+   --base-color-purple-600: #ef9ff9;
+   --base-color-purple-500: #d271df;
+   --base-color-purple-400: #b331c4;
+   --base-color-purple-300: #91289f;
+   --base-color-purple-200: #7a2286;
+   --base-color-purple-100: #51005c;
+   --base-color-purple-50: #2d0033;
+
+   /* --- red --- */
+   --base-color-red-800: #ffebeb;
+   --base-color-red-700: #ffd7d7;
+   --base-color-red-600: #ff8f8f;
+   --base-color-red-500: #f84f4f;
+   --base-color-red-400: #dd0e0e;
+   --base-color-red-300: #b60c0c;
+   --base-color-red-200: #900909;
+   --base-color-red-100: #6b0000;
+   --base-color-red-50: #3d0000;
+
+   /* --- grayscale (translucent) --- */
+   --base-color-grayscale-translucent-500: #fff;
+   --base-color-grayscale-translucent-475: #fbfbf9;
+   --base-color-grayscale-translucent-450: #f6f6f3;
+   --base-color-grayscale-translucent-400: #e5e5e0;
+   --base-color-grayscale-translucent-350: #c8c8c1;
+   --base-color-grayscale-translucent-300: #91918c;
+   --base-color-grayscale-translucent-250: #74746c;
+   --base-color-grayscale-translucent-200: #62625b;
+   --base-color-grayscale-translucent-150: #494943;
+   --base-color-grayscale-translucent-100: #33332e;
+   --base-color-grayscale-translucent-50: #242421;
+   --base-color-grayscale-translucent-25: #181816;
+   --base-color-grayscale-translucent-0: #000;
+
+   /* --- grayscale --- */
+   --base-color-grayscale-500: #fff;
+   --base-color-grayscale-475: #fbfbf9;
+   --base-color-grayscale-450: #f6f6f3;
+   --base-color-grayscale-400: #e5e5e0;
+   --base-color-grayscale-350: #c8c8c1;
+   --base-color-grayscale-300: #91918c;
+   --base-color-grayscale-250: #74746c;
+   --base-color-grayscale-200: #62625b;
+   --base-color-grayscale-150: #494943;
+   --base-color-grayscale-100: #33332e;
+   --base-color-grayscale-50: #242421;
+   --base-color-grayscale-25: #181816;
+   --base-color-grayscale-0: #000;
+
+
    /* ------------------------------------------------------------------ *
    * 1. SURFACES (backgrounds)
    * ------------------------------------------------------------------ */
@@ -275,6 +548,7 @@ html.pt-hide-left-menu {
       padding-inline-start: 0 !important;
    }
 
+   [data-test-id="drawer-container"],
    #HeaderContent {
       left: 0 !important;
    }
