@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "BetterPinterest",
-  "version": "0.1.2",
-  "description": "Modular Pinterest UI tweaks — dark mode, search bar / menu / pin action hiding, media autoplay.",
+  "version": "0.2.0",
+  "description": "Modular Pinterest UI tweaks — dark mode, bars/pin hiding, media autoplay and configurable auto scroll.",
   "permissions": ["storage"],
   "background": {
     "service_worker": "src/background/service-worker.js",
@@ -27,11 +27,10 @@
         "src/content/core/observer.js",
         "src/content/features/index.js",
         "src/content/features/darkMode.js",
-        "src/content/features/leftMenu.js",
-        "src/content/features/searchBar.js",
-        "src/content/features/tabsBar.js",
-        "src/content/features/pinBurger.js",
+        "src/content/features/bars.js",
+        "src/content/features/pinGlobal.js",
         "src/content/features/mediaAutoplay.js",
+        "src/content/features/autoScroll.js",
         "src/content/styles/master.css"
       ],
       "matches": ["https://*.pinterest.com/*"]

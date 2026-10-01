@@ -568,8 +568,9 @@ html.pt-hide-left-menu {
 */
 
 /* ---------------------------------------------------------------------------
-   4.1 Pin Burger Menu — html.pt-hide-pin-menu-footer   (feature: pinBurger)
+   4.1 Pin Menu — html.pt-hide-pin-menu-footer   (feature: hidePinMenu)
    Hides the "⋯" / more-options action menu shown on pin hover.
+   Every pin-appearance feature lives in src/content/features/pinGlobal.js.
 ---------------------------------------------------------------------------- */
 html.pt-hide-pin-menu-footer {
 

@@ -6,14 +6,17 @@ load it and flip the switches you want.
 
 ## What it does
 
-| Toggle | Effect |
-| --- | --- |
-| **Dark mode** | Minimal dark theme (`html.pt-dark`) |
-| **Hide left menu** | Collapses the sidebar navigation |
-| **Hide search bar** | Removes the top search input |
-| **Hide tabs bar** | Hides the tabs bar on the home feed |
-| **Hide pin menu footer** | Hides the footer on the pin detail page |
-| **Media autoplay** | Restarts muted looping playback of feed videos/GIFs |
+Toggles are grouped in the popup by what they affect:
+
+| Group | Toggle | Effect |
+| --- | --- | --- |
+| Theme | **Dark mode** | Minimal dark theme (`html.pt-dark`) |
+| Bars & Panels | **Hide left menu** | Collapses the sidebar navigation |
+| Bars & Panels | **Hide search bar** | Removes the top search input |
+| Bars & Panels | **Hide tabs bar** | Hides the tabs bar on the home feed |
+| Pins | **Hide pin menu** | Hides the "⋯" more-options menu on pins |
+| Feed & Media | **Media autoplay** | Restarts muted looping playback of feed videos/GIFs |
+| Feed & Media | **Auto scroll** | Scrolls the feed automatically (slow / normal / fast) |
 
 State persists per-browser in `chrome.storage.local`, so your toggles survive
 reloads and restarts.

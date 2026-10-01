@@ -1,15 +1,20 @@
 /**
  * popup.js — toggle UI controller.
  * ============================================================================
- * Renders one switch per registered feature and keeps chrome.storage.local in
- * sync. The popup ALSO pings the background worker (message-routing flow per
- * the design doc) — but storage remains the single source of truth that the
- * content scripts actually react to.
+ * Renders one switch per registered feature, grouped into the same sections
+ * declared in `FEATURE_GROUPS` (src/content/features/index.js), plus a control
+ * for every declared feature setting (e.g. auto-scroll speed).
+ *
+ * chrome.storage.local stays the single source of truth: each change is written
+ * there and the content script applies it via `storage.onChanged`. The popup
+ * ALSO pings the background worker / active tab (message-routing flow per the
+ * design doc) for immediate feedback.
  * ============================================================================
  */
 
-import { FEATURES, DEFAULT_STATE, getFeature } from '../content/features/index.js';
+import { FEATURE_GROUPS, FEATURES, DEFAULT_STATE, getFeature } from '../content/features/index.js';
 import { Storage } from '../content/core/storage.js';
+import { settingKey, parseSettingKey } from '../content/core/registry.js';
 
 /** Message contract shared with the background worker and content script. */
 const MESSAGE_TYPE = 'PT_TWEAKER_TOGGLE';
@@ -63,9 +68,75 @@ function createRow(feature) {
   return label;
 }
 
+/** Build the DOM for one feature setting (currently only `select` is used). */
+function createSettingRow(feature, setting) {
+  const row = document.createElement('div');
+  row.className = 'setting-row';
+  row.dataset.featureId = feature.id;
+  row.dataset.settingId = setting.id;
+
+  const controlId = `setting-${feature.id}-${setting.id}`;
+
+  const label = document.createElement('label');
+  label.className = 'setting-label';
+  label.htmlFor = controlId;
+  label.textContent = setting.label;
+
+  const control = document.createElement('select');
+  control.className = 'setting-select';
+  control.id = controlId;
+  control.dataset.featureId = feature.id;
+  control.dataset.settingId = setting.id;
+
+  for (const option of setting.options ?? []) {
+    const opt = document.createElement('option');
+    opt.value = String(option.value);
+    opt.textContent = option.label;
+    control.append(opt);
+  }
+
+  row.append(label, control);
+  return row;
+}
+
+/** Build a popup section for a logical feature group. */
+function createGroup(group) {
+  const section = document.createElement('section');
+  section.className = 'group';
+  section.dataset.groupId = group.id;
+
+  const headingId = `group-${group.id}`;
+  section.setAttribute('aria-labelledby', headingId);
+
+  const heading = document.createElement('h2');
+  heading.className = 'group-title';
+  heading.id = headingId;
+  heading.textContent = group.title;
+
+  const items = document.createElement('div');
+  items.className = 'group-items';
+
+  for (const feature of group.features) {
+    items.append(createRow(feature));
+    for (const setting of feature.settings ?? []) {
+      items.append(createSettingRow(feature, setting));
+    }
+  }
+
+  section.append(heading, items);
+  return section;
+}
+
 function getInput(featureId) {
   return listEl.querySelector(
     `.toggle-row[data-feature-id="${CSS.escape(featureId)}"] .toggle-input`,
+  );
+}
+
+function getSettingControl(featureId, settingId) {
+  return listEl.querySelector(
+    `.setting-select[data-feature-id="${CSS.escape(featureId)}"]` +
+      `[data-setting-id="${CSS.escape(settingId)}"]`,
   );
 }
 
@@ -80,10 +151,19 @@ function applyPopupTheme(state) {
 
 async function syncFromStorage() {
   const state = await store.getAll(DEFAULT_STATE);
+
   for (const feature of FEATURES) {
     const input = getInput(feature.id);
     if (input) input.checked = Boolean(state[feature.id]);
+
+    for (const setting of feature.settings ?? []) {
+      const control = getSettingControl(feature.id, setting.id);
+      if (!control) continue;
+      const value = state[settingKey(feature.id, setting.id)];
+      control.value = value == null ? String(setting.defaultValue) : String(value);
+    }
   }
+
   applyPopupTheme(state);
 }
 
@@ -124,16 +204,49 @@ async function handleToggle(event) {
   statusEl.textContent = `Saved ${tag}. Open or reload pinterest.com to see it.`;
 }
 
+async function handleSettingChange(event) {
+  const control = event.target;
+  if (!(control instanceof HTMLSelectElement) || !control.matches('.setting-select')) return;
+
+  const { featureId, settingId } = control.dataset;
+  const feature = getFeature(featureId);
+  const setting = feature?.settings?.find((entry) => entry.id === settingId);
+  const value = control.value;
+
+  // Settings travel through storage only; the content script routes
+  // `<featureId>.<settingId>` keys to registry.applySetting().
+  await store.set(settingKey(featureId, settingId), value);
+
+  const label = setting?.label ?? settingId;
+  const option = setting?.options?.find((entry) => String(entry.value) === value);
+  statusEl.textContent = `${label}: ${option?.label ?? value}`;
+}
+
 function init() {
-  for (const feature of FEATURES) listEl.append(createRow(feature));
+  for (const group of FEATURE_GROUPS) listEl.append(createGroup(group));
 
-  listEl.addEventListener('change', handleToggle);
+  listEl.addEventListener('change', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.matches('.toggle-input')) {
+      handleToggle(event);
+    } else if (target instanceof HTMLSelectElement && target.matches('.setting-select')) {
+      handleSettingChange(event);
+    }
+  });
 
-  // Keep the popup in sync if another popup/tab changes a setting.
+  // Keep the popup in sync if another popup/tab changes a toggle or a setting.
   store.onChanged((changes) => {
-    for (const [featureId, change] of Object.entries(changes)) {
-      const input = getInput(featureId);
-      if (input && typeof change.newValue === 'boolean') input.checked = change.newValue;
+    for (const [key, change] of Object.entries(changes)) {
+      const input = getInput(key);
+      if (input && typeof change.newValue === 'boolean') {
+        input.checked = change.newValue;
+        continue;
+      }
+      const parsed = parseSettingKey(key);
+      if (parsed && change.newValue != null) {
+        const control = getSettingControl(parsed.featureId, parsed.settingId);
+        if (control) control.value = String(change.newValue);
+      }
     }
     if ('darkMode' in changes) {
       applyPopupTheme({ darkMode: changes.darkMode.newValue });

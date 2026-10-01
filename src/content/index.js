@@ -44,6 +44,13 @@
   let registry = null;
   let bootstrapped = false;
 
+  /**
+   * Parser for `<featureId>.<settingId>` storage keys — supplied by the
+   * registry module during bootstrap (content scripts can't statically import).
+   * @type {((key: string) => { featureId: string, settingId: string }|null)|null}
+   */
+  let parseSettingKey = null;
+
   // ---------------------------------------------------------------------------
   // Storage changes that arrive while bootstrap() is still running (e.g. the
   // user flips a popup toggle in the first second of page load) are buffered
@@ -74,10 +81,17 @@
 
   /** @param {Record<string, {newValue?: *}>} changes */
   function applyChanges(changes) {
-    for (const [featureId, change] of Object.entries(changes)) {
-      if (!registry || !registry.has(featureId)) continue;
-      if (typeof change.newValue !== 'boolean') continue;
-      registry.apply(featureId, change.newValue);
+    for (const [key, change] of Object.entries(changes)) {
+      // Feature toggle — the storage key IS the feature id (boolean value).
+      if (registry?.has(key)) {
+        if (typeof change.newValue === 'boolean') registry.apply(key, change.newValue);
+        continue;
+      }
+      // Feature setting — the storage key is "<featureId>.<settingId>".
+      const parsed = parseSettingKey ? parseSettingKey(key) : null;
+      if (parsed && registry?.has(parsed.featureId)) {
+        registry.applySetting(parsed.featureId, parsed.settingId, change.newValue);
+      }
     }
   }
 
@@ -111,11 +125,17 @@
     console.info(`${LOG_PREFIX} content script injected on ${location.href}`);
 
     // Re-apply any storage change that was buffered while modules loaded.
-    const [{ FeatureRegistry }, { Storage }, { FEATURES, DEFAULT_STATE }] = await Promise.all([
+    const [
+      { FeatureRegistry, parseSettingKey: parseKey },
+      { Storage },
+      { FEATURES, DEFAULT_STATE },
+    ] = await Promise.all([
       import(MODULE_URLS.registry),
       import(MODULE_URLS.storage),
       import(MODULE_URLS.features),
     ]);
+
+    parseSettingKey = parseKey;
 
     const store = new Storage('local');
 

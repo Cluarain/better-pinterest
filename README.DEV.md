@@ -30,13 +30,12 @@ modules directly from `src/`.
     │   │   ├── storage.js      # promise wrapper for chrome.storage.local
     │   │   └── observer.js     # MutationObserver wrapper (rAF batching)
     │   ├── features
-    │   │   ├── index.js        # catalogue + DEFAULT_STATE (THE place to register)
+    │   │   ├── index.js        # catalogue + FEATURE_GROUPS + DEFAULT_STATE
     │   │   ├── darkMode.js     # CSS  → html.pt-dark
-    │   │   ├── leftMenu.js     # CSS  → html.pt-hide-left-menu
-    │   │   ├── searchBar.js    # CSS  → html.pt-hide-search
-    │   │   ├── tabsBar.js      # CSS  → html.pt-hide-tabs
-    │   │   ├── pinBurger.js    # CSS  → html.pt-hide-pin-menu-footer
-    │   │   └── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
+    │   │   ├── bars.js         # CSS  → leftMenu + searchBar + tabsBar
+    │   │   ├── pinGlobal.js    # CSS  → global pin appearance (hidePinMenu, ...)
+    │   │   ├── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
+    │   │   └── autoScroll.js   # JS   → auto-scroll loop + `speed` setting
     │   └── styles
     │       └── master.css      # ALL visual rules, scoped to html classes
     └── popup
@@ -73,7 +72,9 @@ modules directly from `src/`.
      description: 'Hides the comment section.',
    };
    ```
-3. **`src/content/features/index.js`** — import it and add to `FEATURES`.
+3. **`src/content/features/index.js`** — import it and add it to the matching
+   group in `FEATURE_GROUPS` (both the popup sections and the flat `FEATURES`
+   list are derived from it).
 
 Done: the registry, popup, storage seeding and content bootstrap pick it up
 automatically.
@@ -99,6 +100,38 @@ export class MyFeature extends BaseFeature {
   onDisable() { /* revert */ }
 }
 ```
+
+## How to add a feature setting (non-boolean option)
+
+A feature can expose options beyond on/off — see `autoScroll.js` (scroll speed).
+Declare a `settings` array on the config; the popup renders a control per
+setting and the registry persists it under the storage key
+`<featureId>.<settingId>` (`settingKey()` / `parseSettingKey()` in
+`core/registry.js`):
+
+```js
+export const myFeature = {
+  id: 'myFeature',
+  // ...
+  settings: [
+    {
+      id: 'speed',
+      label: 'Scroll speed',
+      type: 'select',
+      defaultValue: 'normal',
+      options: [
+        { value: 'slow', label: 'Slow' },
+        { value: 'normal', label: 'Normal' },
+      ],
+    },
+  ],
+};
+```
+
+Read the current values from `this.settingValues` in `onEnable()` and react to
+live changes in the `onSettings(settings)` hook. Nothing else needs to change:
+`DEFAULT_STATE`, the popup control, the storage key and the change-routing in
+`content/index.js` are all derived from the schema.
 
 ## Selector maintenance (important)
 

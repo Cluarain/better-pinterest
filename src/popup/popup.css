@@ -65,20 +65,50 @@ body {
   color: var(--text-muted);
 }
 
-/* ---------- Toggle list ---------- */
+/* ---------- Content: grouped sections ---------- */
 .list {
   display: flex;
   flex-direction: column;
-  max-height: 360px;
+  gap: 14px;
+  padding: 14px 16px;
+  max-height: 420px;
   overflow-y: auto;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-title {
+  margin: 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.group-items {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Every row gets a top divider; the first one sits flush with the border. */
+.group-items > * + * {
+  border-top: 1px solid var(--border);
 }
 
 .toggle-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
   cursor: pointer;
   transition: background 0.12s;
 }
@@ -121,6 +151,34 @@ body {
   background: #fff0f2;
   color: var(--pt-red);
   border-color: #ffd6db;
+}
+
+/* ---------- Setting row (e.g. auto-scroll speed) ---------- */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--bg-soft);
+}
+.setting-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.setting-select {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.setting-select:focus-visible {
+  outline: 2px solid var(--pt-red);
+  outline-offset: 1px;
 }
 
 /* Hidden but focusable checkbox */

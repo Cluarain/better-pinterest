@@ -15,6 +15,8 @@
  *                      master.css). No per-feature JS styling code.
  *   FeatureRegistry  : registers features and owns the lifecycle
  *                      (init -> enable/disable -> apply/state).
+ *   settingKey       : storage key for a feature setting (`autoScroll.speed`).
+ *   parseSettingKey  : inverse of settingKey — splits such keys back apart.
  * ============================================================================
  */
 
@@ -23,6 +25,32 @@ const LOG_PREFIX = '[pt-tweaker]';
 
 /** Safety cap for the <html> class guard (see FeatureRegistry.startClassGuard). */
 const CLASS_GUARD_MAX_REPAIRS = 50;
+
+/** Separator between a feature id and a setting id inside a storage key. */
+const SETTING_SEPARATOR = '.';
+
+/**
+ * Build the chrome.storage key for a feature *setting* (e.g. `autoScroll.speed`).
+ * Boolean toggles keep using the bare feature id as their key.
+ * @param {string} featureId
+ * @param {string} settingId
+ * @returns {string}
+ */
+export const settingKey = (featureId, settingId) =>
+  `${featureId}${SETTING_SEPARATOR}${settingId}`;
+
+/**
+ * Inverse of settingKey() — parse a storage key back into its parts.
+ * Returns null for plain feature-toggle keys and unrelated keys.
+ * @param {string} key
+ * @returns {{ featureId: string, settingId: string }|null}
+ */
+export function parseSettingKey(key) {
+  if (typeof key !== 'string') return null;
+  const at = key.indexOf(SETTING_SEPARATOR);
+  if (at <= 0 || at === key.length - 1) return null;
+  return { featureId: key.slice(0, at), settingId: key.slice(at + 1) };
+}
 
 export class BaseFeature {
   /**
@@ -42,6 +70,22 @@ export class BaseFeature {
     this.type = config.type ?? 'css';
     this.htmlClass = config.htmlClass ?? config.bodyClass ?? null;
     this.defaultValue = Boolean(config.defaultValue);
+
+    /**
+     * Declared settings schema — non-boolean options this feature exposes to the
+     * popup, e.g. `[{ id: 'speed', type: 'select', options: [...] }]`.
+     * @type {Array<Object>}
+     */
+    this.settings = Array.isArray(config.settings) ? config.settings : [];
+
+    /**
+     * Current setting values, seeded from each setting's `defaultValue`.
+     * @type {Record<string, *>}
+     */
+    this.settingValues = this.settings.reduce((acc, setting) => {
+      acc[setting.id] = setting.defaultValue;
+      return acc;
+    }, {});
 
     /** @type {boolean} current enabled state */
     this._enabled = false;
@@ -112,6 +156,32 @@ export class BaseFeature {
 
   /** JS-driven logic hook — executed on disable. Must revert onEnable(). */
   onDisable() {}
+
+  /**
+   * Hook — called whenever one of this feature's settings changes. Not called
+   * on every page load: read `this.settingValues` from init()/onEnable().
+   * @param {Record<string, *>} settings current values keyed by setting id
+   */
+  onSettings() {}
+
+  /**
+   * Update a declared setting value and notify the feature. Unknown setting ids
+   * are ignored, so a stale storage key can never inject arbitrary state.
+   * @param {string} settingId
+   * @param {*} value
+   * @returns {boolean} true if the setting is declared (value possibly changed)
+   */
+  setSetting(settingId, value) {
+    if (!this.settings.some((setting) => setting.id === settingId)) return false;
+    if (this.settingValues[settingId] === value) return true;
+    this.settingValues[settingId] = value;
+    try {
+      this.onSettings({ ...this.settingValues });
+    } catch (err) {
+      this._warn('onSettings failed', err);
+    }
+    return true;
+  }
 
   /** Full teardown when the extension / page is being shut down. */
   destroy() {
@@ -187,7 +257,8 @@ export class FeatureRegistry {
 
   /**
    * Initialize ALL features once, then apply the initial persisted state.
-   * @param {Record<string, boolean>} [state] featureId -> enabled
+   * @param {Record<string, boolean|string|number>} [state] storage snapshot:
+   *        featureId -> enabled, plus `<featureId>.<settingId>` setting values.
    */
   initAll(state = {}) {
     for (const feature of this.all) {
@@ -200,6 +271,15 @@ export class FeatureRegistry {
         }
       }
     }
+    // Seed declared settings from storage BEFORE applying toggles, so a feature
+    // that turns on in this pass already sees its real values.
+    for (const feature of this.all) {
+      for (const setting of feature.settings) {
+        const key = settingKey(feature.id, setting.id);
+        if (key in state) feature.settingValues[setting.id] = state[key];
+      }
+    }
+
     for (const feature of this.all) {
       try {
         feature.apply(Boolean(state[feature.id]));
@@ -239,6 +319,19 @@ export class FeatureRegistry {
   /** @param {string} featureId */
   disable(featureId) {
     return this.apply(featureId, false);
+  }
+
+  /**
+   * Update a declared setting of a feature (storage / message handlers).
+   * @param {string} featureId
+   * @param {string} settingId
+   * @param {*} value
+   * @returns {boolean} true if a registered feature declares the setting
+   */
+  applySetting(featureId, settingId, value) {
+    const feature = this._features.get(featureId);
+    if (!feature) return false;
+    return feature.setSetting(settingId, value);
   }
 
   /** @param {string} featureId @returns {BaseFeature|undefined} */
