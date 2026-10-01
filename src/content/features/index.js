@@ -1,24 +1,24 @@
 /**
  * features/index.js
  * ============================================================================
- * Feature catalogue — the ONE place every feature is declared.
+ * Feature catalogue — grouping declaration for the whole extension.
  *
- * Files are split by logic; `FEATURE_GROUPS` below is the single source of
- * truth for both the flat feature list and the popup sections:
+ * `FEATURE_GROUPS` is the single source of truth for both the flat feature list
+ * and the popup sections. Bars and pin features are COLLECTED AUTOMATICALLY
+ * from their barrel modules (`import * as bars` / `import * as pinGlobal`):
  *
  *   darkMode.js      → Theme         (appearance)
- *   bars.js          → Bars & Panels (leftMenu + searchBar + tabsBar)
- *   pinGlobal.js     → Pins          (every pin-appearance tweak lives here)
+ *   bars.js          → Bars & Panels (auto-collected: leftMenu, searchBar, ...)
+ *   pinGlobal.js     → Pins          (auto-collected: every pin-appearance tweak)
  *   mediaAutoplay.js → Feed & Media  (JS)
  *   autoScroll.js    → Feed & Media  (JS, configurable)
  *
- * Adding a feature is exactly three steps:
- *   1. drop a new file in src/content/features/
- *        - CSS-driven: a plain config object (id / title / htmlClass / ...),
- *        - JS-driven:  a BaseFeature subclass with init/onEnable/onDisable.
- *   2. import it and add it to the matching group in `FEATURE_GROUPS`,
- *   3. add the matching rule(s) to src/content/styles/master.css.
- * Nothing else in the codebase needs to change.
+ * Adding a feature:
+ *   - a bar / pin feature → just `export const myFeature = { id, ... }` from
+ *     bars.js or pinGlobal.js; it lands in its group automatically (module
+ *     namespaces hand out their exports in sorted order). Then add the CSS.
+ *   - anything else → drop a new file in src/content/features/, import it and
+ *     add it to the matching group in `FEATURE_GROUPS`, then add the CSS rules.
  *
  * Settings: a feature may declare `settings: [{ id, label, type, options,
  * defaultValue }]`. Those are persisted under `<featureId>.<settingId>` keys
@@ -29,10 +29,24 @@
 
 import { settingKey } from '../core/registry.js';
 import { darkMode } from './darkMode.js';
-import { leftMenu, searchBar, tabsBar } from './bars.js';
-import { hidePinMenu } from './pinGlobal.js';
+import * as bars from './bars.js';
+import * as pinGlobal from './pinGlobal.js';
 import { mediaAutoplay, MediaAutoplayFeature } from './mediaAutoplay.js';
 import { autoScroll, AutoScrollFeature } from './autoScroll.js';
+
+/**
+ * Collect every exported feature config from a barrel module namespace object
+ * (`import * as bars`). Namespace exports come out in sorted order, so a plain
+ * `export const myFeature = { id, ... }` in bars.js / pinGlobal.js is enough —
+ * no change is needed here. Non-feature exports (anything without a string
+ * `id`) are ignored so a helper/constant can't break the registry.
+ * @param {Record<string, unknown>} moduleNamespace
+ * @returns {Array<Object>} feature configs
+ */
+const collectFeatures = (moduleNamespace) =>
+  Object.values(moduleNamespace).filter(
+    (value) => value && typeof value === 'object' && typeof value.id === 'string',
+  );
 
 /**
  * Ordered feature GROUPS — both the popup sections and the flat FEATURES list
@@ -48,12 +62,12 @@ export const FEATURE_GROUPS = [
   {
     id: 'panels',
     title: 'Bars & Panels',
-    features: [leftMenu, searchBar, tabsBar],
+    features: collectFeatures(bars),
   },
   {
     id: 'pins',
     title: 'Pins',
-    features: [hidePinMenu],
+    features: collectFeatures(pinGlobal),
   },
   {
     id: 'feed',

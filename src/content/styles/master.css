@@ -14,11 +14,24 @@
    `data-test-id`, `aria-label` or stable structural patterns (#ids, :has(),
    role attributes) over generated classes like `.xyz123`.
 
+   === FILE LAYOUT (grouped like FEATURE_GROUPS) ===
+   The rules below are organised by the SAME groups declared in
+   `src/content/features/index.js`; search for a `GROUP · ...` banner to jump
+   straight to a group's rules:
+     GROUP · THEME          → darkMode
+     GROUP · BARS & PANELS  → searchBar, tabsBar, leftMenu
+     GROUP · PINS           → hidePinMenu, hidePinHeader (features/pinGlobal.js)
+     GROUP · FEED & MEDIA   → mediaAutoplay
+
    === SELECTOR MAINTENANCE ===
    The ACTIVE rules below use the *placeholder* selectors from the design doc.
    Candidate selectors collected from community userscripts/styles
    (verified 2025–2026) are listed as comments under each section — swap them
    in and re-test whenever a toggle stops working.
+   ============================================================================ */
+
+/* ============================================================================
+   GROUP · THEME                                       (FEATURE_GROUPS: 'theme')
    ============================================================================ */
 
 /* ---------------------------------------------------------------------------
@@ -500,14 +513,10 @@ html.pt-dark:has(#featureList) .toggle-badge--js {
    border-color: #6b2b2b;
 }
 
-/*
-   Quick-dirty alternative while iterating (inverts the whole page; media must
-   then be inverted back). Uncomment to try:
-html.pt-dark { filter: invert(0.92) hue-rotate(180deg) !important; }
-html.pt-dark img,
-html.pt-dark video,
-html.pt-dark picture { filter: invert(1) hue-rotate(180deg) !important; }
-*/
+
+/* ============================================================================
+   GROUP · BARS & PANELS                              (FEATURE_GROUPS: 'panels')
+   ============================================================================ */
 
 /* ---------------------------------------------------------------------------
    4.1 Search Bar — html.pt-hide-search         (feature: searchBar)
@@ -521,14 +530,6 @@ html.pt-hide-search {
       padding-top: 1rem;
    }
 }
-
-/*
-   Candidate selectors (seen in community scripts, 2025–2026):
-     #searchBoxContainer
-     input[name="searchBoxInput"]
-     [data-test-id="search-box-input"]
-     header input[placeholder*="Search"]
-*/
 
 /* ---------------------------------------------------------------------------
    4.1 Tabs Bar — html.pt-hide-tabs                 (feature: tabsBar)
@@ -562,15 +563,15 @@ html.pt-hide-left-menu {
    }
 }
 
-/*
-   TODO(user): Pinterest moves this around — inspect the home-feed DOM and
-   point this at the sidebar/aside container next to the pin grid.
-*/
+
+/* ============================================================================
+   GROUP · PINS                                        (FEATURE_GROUPS: 'pins')
+   Every pin-appearance feature lives in features/pinGlobal.js.
+   ============================================================================ */
 
 /* ---------------------------------------------------------------------------
    4.1 Pin Menu — html.pt-hide-pin-menu-footer   (feature: hidePinMenu)
    Hides the "⋯" / more-options action menu shown on pin hover.
-   Every pin-appearance feature lives in src/content/features/pinGlobal.js.
 ---------------------------------------------------------------------------- */
 html.pt-hide-pin-menu-footer {
 
@@ -591,6 +592,21 @@ html.pt-hide-pin-menu-footer {
      - the save button itself:
          [data-test-id="SaveButton"]
 */
+
+/* ---------------------------------------------------------------------------
+   4.1 Pin Header — html.pt-hide-pin-header      (feature: hidePinHeader)
+   Hides the pin type identifier chip in the pin header (idea-pin / video
+   badge, ...).
+---------------------------------------------------------------------------- */
+html.pt-hide-pin-header {
+   [data-test-id="PinTypeIdentifier"] {
+      display: none;
+   }
+}
+
+/* ============================================================================
+   GROUP · FEED & MEDIA                                (FEATURE_GROUPS: 'feed')
+   ============================================================================ */
 
 /* ---------------------------------------------------------------------------
    4.2 Media Autoplay — html.pt-autoplay-media (feature: mediaAutoplay)

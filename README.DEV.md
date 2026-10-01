@@ -32,8 +32,8 @@ modules directly from `src/`.
     │   ├── features
     │   │   ├── index.js        # catalogue + FEATURE_GROUPS + DEFAULT_STATE
     │   │   ├── darkMode.js     # CSS  → html.pt-dark
-    │   │   ├── bars.js         # CSS  → leftMenu + searchBar + tabsBar
-    │   │   ├── pinGlobal.js    # CSS  → global pin appearance (hidePinMenu, ...)
+    │   │   ├── bars.js         # CSS  → bar features (auto-collected)
+    │   │   ├── pinGlobal.js    # CSS  → global pin appearance (auto-collected)
     │   │   ├── mediaAutoplay.js# JS   → html.pt-autoplay-media + video logic
     │   │   └── autoScroll.js   # JS   → auto-scroll loop + `speed` setting
     │   └── styles
@@ -75,6 +75,11 @@ modules directly from `src/`.
 3. **`src/content/features/index.js`** — import it and add it to the matching
    group in `FEATURE_GROUPS` (both the popup sections and the flat `FEATURES`
    list are derived from it).
+
+   > **Bar / pin features skip step 3.** Export the config from `bars.js` or
+   > `pinGlobal.js` instead of a new file — `index.js` collects those modules
+   > automatically (`import * as bars` / `import * as pinGlobal`), so the new
+   > toggle appears in its group as soon as the file is saved.
 
 Done: the registry, popup, storage seeding and content bootstrap pick it up
 automatically.
